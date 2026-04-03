@@ -187,11 +187,18 @@ export default function FormPage() {
         {errMsg && <p className={styles.error}>{errMsg}</p>}
 
         <button
-          className={styles.submitBtn}
+          className={`${styles.submitBtn} ${step === "uploading" ? styles.submitBtnLoading : ""}`}
           onClick={handleSubmit}
           disabled={step === "uploading"}
         >
-          {step === "uploading" ? "Submitting…" : "Submit →"}
+          {step === "uploading" ? (
+            <>
+              <div className={styles.spinner}></div>
+              <span>Submitting…</span>
+            </>
+          ) : (
+            "Submit →"
+          )}
         </button>
       </div>
     </main>
