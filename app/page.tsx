@@ -37,9 +37,22 @@ export default function FormPage() {
     }
   }
 
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/\D/g, ""); // Only digits
+    if (val.length <= 10) setPhone(val);
+  };
+
   async function handleSubmit() {
-    if (!name.trim() || !phone.trim()) {
-      setErrMsg("Please fill in your name and phone number.");
+    if (!name.trim()) {
+      setErrMsg("Please enter your name.");
+      return;
+    }
+    if (phone.length !== 10) {
+      setErrMsg("Please enter a valid 10-digit mobile number.");
+      return;
+    }
+    if (!photoFile) {
+      setErrMsg("Please upload or take a photo.");
       return;
     }
     setErrMsg("");
@@ -177,9 +190,9 @@ export default function FormPage() {
           <input
             className={styles.input}
             type="tel"
-            placeholder="Enter mobile number"
+            placeholder="10-digit mobile number"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={handlePhoneChange}
             autoComplete="tel"
           />
         </div>
