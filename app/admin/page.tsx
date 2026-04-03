@@ -18,7 +18,7 @@ export default function AdminPage() {
   async function load() {
     setLoading(true);
     try {
-      const res = await fetch("/api/submissions");
+      const res = await fetch("/api/submissions", { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to load");
       setEntries(await res.json());
     } catch {
