@@ -78,6 +78,25 @@ export default function AdminPage() {
     }
   }
 
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete ${name}'s entry? This will also remove their photo.`)) return;
+    
+    try {
+      const res = await fetch(`/api/submissions/${id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) throw new Error("Delete failed");
+      
+      // Update UI
+      setEntries(entries.filter(e => e.id !== id));
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete entry.");
+    }
+  };
+
   function downloadExcel() {
     const rows = entries.map((e) => ({
       Name: e.name,
@@ -178,8 +197,9 @@ export default function AdminPage() {
                   <th style={{ width: "48px" }}></th>
                   <th>Name</th>
                   <th>Phone</th>
-                  <th>Photo</th>
+                  <th>Photo Status</th>
                   <th>Submitted at</th>
+                  <th style={{ width: "80px" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -226,6 +246,15 @@ export default function AdminPage() {
                             dateStyle: "medium",
                             timeStyle: "short",
                           })}
+                        </td>
+                        <td>
+                          <button 
+                            className={styles.deleteBtn}
+                            onClick={() => handleDelete(e.id, e.name)}
+                            title="Delete Entry"
+                          >
+                            🗑️
+                          </button>
                         </td>
                       </tr>
                     );
