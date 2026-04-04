@@ -5,6 +5,7 @@ import imageCompression from "browser-image-compression";
 import styles from "./page.module.css";
 
 type Step = "form" | "uploading" | "success" | "error";
+const MAX_TEXT_LENGTH = 50;
 
 export default function FormPage() {
   const [name, setName] = useState("");
@@ -70,6 +71,10 @@ export default function FormPage() {
   async function handleSubmit() {
     if (!name.trim()) {
       setErrMsg("Please enter your name.");
+      return;
+    }
+    if (name.trim().length > MAX_TEXT_LENGTH) {
+      setErrMsg("Name cannot be more than 50 characters.");
       return;
     }
     if (phone.length !== 10) {
@@ -209,7 +214,8 @@ export default function FormPage() {
             type="text"
             placeholder="Enter name"
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => setName(e.target.value.slice(0, MAX_TEXT_LENGTH))}
+            maxLength={MAX_TEXT_LENGTH}
             autoComplete="name"
           />
         </div>
@@ -220,9 +226,11 @@ export default function FormPage() {
           <input
             className={styles.input}
             type="tel"
-            placeholder="10-digit mobile number"
+            placeholder="Enter 10 digit phone"
             value={phone}
             onChange={handlePhoneChange}
+            inputMode="numeric"
+            maxLength={10}
             autoComplete="tel"
           />
         </div>

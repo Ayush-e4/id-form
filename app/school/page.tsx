@@ -5,6 +5,14 @@ import imageCompression from "browser-image-compression";
 import styles from "../page.module.css";
 
 type Step = "form" | "uploading" | "success" | "error";
+const BLOOD_GROUP_OPTIONS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"] as const;
+const MAX_TEXT_LENGTH = 50;
+const MAX_ADDRESS_LENGTH = 200;
+const MAX_HOUSE_LENGTH = 20;
+const MIN_HEIGHT = 50;
+const MAX_HEIGHT = 300;
+const MIN_WEIGHT = 10;
+const MAX_WEIGHT = 200;
 
 export default function SchoolFormPage() {
   const [formData, setFormData] = useState({
@@ -55,9 +63,23 @@ export default function SchoolFormPage() {
     };
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    let nextValue = value;
+
+    if (name === "address") {
+      nextValue = value.slice(0, MAX_ADDRESS_LENGTH);
+    } else if (name === "houseName") {
+      nextValue = value.slice(0, MAX_HOUSE_LENGTH);
+    } else if (name === "height" || name === "weight") {
+      nextValue = value.replace(/[^\d.]/g, "").slice(0, 6);
+    } else {
+      nextValue = value.slice(0, MAX_TEXT_LENGTH);
+    }
+
+    setFormData(prev => ({ ...prev, [name]: nextValue }));
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,6 +111,24 @@ export default function SchoolFormPage() {
   async function handleSubmit() {
     if (!formData.name.trim()) {
       setErrMsg("Please enter student name.");
+      return;
+    }
+    if (formData.phone.length !== 10) {
+      setErrMsg("Phone number must be exactly 10 digits.");
+      return;
+    }
+    const height = formData.height ? Number(formData.height) : null;
+    if (height !== null && (Number.isNaN(height) || height < MIN_HEIGHT || height > MAX_HEIGHT)) {
+      setErrMsg("Height must be between 50 cm and 300 cm.");
+      return;
+    }
+    const weight = formData.weight ? Number(formData.weight) : null;
+    if (weight !== null && (Number.isNaN(weight) || weight < MIN_WEIGHT || weight > MAX_WEIGHT)) {
+      setErrMsg("Weight must be between 10 kg and 200 kg.");
+      return;
+    }
+    if (formData.bloodGroup && !BLOOD_GROUP_OPTIONS.includes(formData.bloodGroup as (typeof BLOOD_GROUP_OPTIONS)[number])) {
+      setErrMsg("Please select a valid blood group.");
       return;
     }
     if (!photoFile) {
@@ -191,7 +231,7 @@ export default function SchoolFormPage() {
         <p className={styles.sub}>Student Registration</p>
       </header>
 
-      <div className={styles.body} style={{ maxWidth: '600px' }}>
+      <div className={`${styles.body} ${styles.schoolBody}`}>
         <div className={styles.photoZone}>
           <input ref={fileRef} type="file" accept="image/*" onChange={onPhotoChange} style={{ display: "none" }} />
           <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={onPhotoChange} style={{ display: "none" }} />
@@ -202,83 +242,90 @@ export default function SchoolFormPage() {
             </div>
           ) : (
             <div className={styles.photoDualActions}>
-              <button className={styles.photoActionBtn} onClick={() => fileRef.current?.click()}>
+              <button className={styles.photoActionBtn} type="button" onClick={() => fileRef.current?.click()}>
                 <span className={styles.photoActionIcon}>🖼️</span> Gallery
               </button>
-              <button className={styles.photoActionBtn} onClick={() => cameraRef.current?.click()}>
+              <button className={styles.photoActionBtn} type="button" onClick={() => cameraRef.current?.click()}>
                 <span className={styles.photoActionIcon}>📷</span> Camera
               </button>
             </div>
           )}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div className={styles.schoolGrid2}>
           <div className={styles.field}>
             <label className={styles.label}>Student Name</label>
-            <input className={styles.input} name="name" value={formData.name} onChange={handleInputChange} placeholder="Required" />
+            <input className={styles.input} name="name" value={formData.name} onChange={handleInputChange} placeholder="Required" maxLength={MAX_TEXT_LENGTH} />
           </div>
           <div className={styles.field}>
             <label className={styles.label}>Class</label>
-            <input className={styles.input} name="class" value={formData.class} onChange={handleInputChange} />
+            <input className={styles.input} name="class" value={formData.class} onChange={handleInputChange} maxLength={MAX_TEXT_LENGTH} />
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div className={styles.schoolGrid2}>
           <div className={styles.field}>
             <label className={styles.label}>Father's Name</label>
-            <input className={styles.input} name="fathersName" value={formData.fathersName} onChange={handleInputChange} />
+            <input className={styles.input} name="fathersName" value={formData.fathersName} onChange={handleInputChange} maxLength={MAX_TEXT_LENGTH} />
           </div>
           <div className={styles.field}>
             <label className={styles.label}>Mother's Name</label>
-            <input className={styles.input} name="mothersName" value={formData.mothersName} onChange={handleInputChange} />
+            <input className={styles.input} name="mothersName" value={formData.mothersName} onChange={handleInputChange} maxLength={MAX_TEXT_LENGTH} />
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div className={styles.schoolGrid2}>
           <div className={styles.field}>
             <label className={styles.label}>Date of Birth</label>
             <input className={styles.input} type="date" name="dob" value={formData.dob} onChange={handleInputChange} />
           </div>
           <div className={styles.field}>
             <label className={styles.label}>Mobile</label>
-            <input className={styles.input} type="tel" name="phone" value={formData.phone} onChange={handlePhoneChange} />
+            <input className={styles.input} type="tel" name="phone" value={formData.phone} onChange={handlePhoneChange} placeholder="Enter 10 digit phone" inputMode="numeric" maxLength={10} />
           </div>
         </div>
 
         <div className={styles.field}>
             <label className={styles.label}>Address</label>
-            <input className={styles.input} name="address" value={formData.address} onChange={handleInputChange} />
+            <input className={styles.input} name="address" value={formData.address} onChange={handleInputChange} maxLength={MAX_ADDRESS_LENGTH} />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div className={styles.schoolGrid2}>
           <div className={styles.field}>
             <label className={styles.label}>Roll No</label>
-            <input className={styles.input} name="rollNo" value={formData.rollNo} onChange={handleInputChange} />
+            <input className={styles.input} name="rollNo" value={formData.rollNo} onChange={handleInputChange} maxLength={MAX_TEXT_LENGTH} />
           </div>
           <div className={styles.field}>
             <label className={styles.label}>Admission No</label>
-            <input className={styles.input} name="admissionNo" value={formData.admissionNo} onChange={handleInputChange} />
+            <input className={styles.input} name="admissionNo" value={formData.admissionNo} onChange={handleInputChange} maxLength={MAX_TEXT_LENGTH} />
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+        <div className={styles.schoolGrid3}>
           <div className={styles.field}>
             <label className={styles.label}>Height</label>
-            <input className={styles.input} name="height" value={formData.height} onChange={handleInputChange} />
+            <input className={styles.input} type="number" name="height" value={formData.height} onChange={handleInputChange} min={MIN_HEIGHT} max={MAX_HEIGHT} step="0.1" inputMode="decimal" placeholder="50 to 300 cm" />
           </div>
           <div className={styles.field}>
             <label className={styles.label}>Weight</label>
-            <input className={styles.input} name="weight" value={formData.weight} onChange={handleInputChange} />
+            <input className={styles.input} type="number" name="weight" value={formData.weight} onChange={handleInputChange} min={MIN_WEIGHT} max={MAX_WEIGHT} step="0.1" inputMode="decimal" placeholder="10 to 200 kg" />
           </div>
-          <div className={styles.field}>
+          <div className={`${styles.field} ${styles.bloodGroupField}`}>
             <label className={styles.label}>Blood Group</label>
-            <input className={styles.input} name="bloodGroup" value={formData.bloodGroup} onChange={handleInputChange} />
+            <select className={styles.input} name="bloodGroup" value={formData.bloodGroup} onChange={handleInputChange}>
+              <option value="">Select blood group</option>
+              {BLOOD_GROUP_OPTIONS.map((group) => (
+                <option key={group} value={group}>
+                  {group}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
         <div className={styles.field}>
           <label className={styles.label}>House Name</label>
-          <input className={styles.input} name="houseName" value={formData.houseName} onChange={handleInputChange} />
+          <input className={styles.input} name="houseName" value={formData.houseName} onChange={handleInputChange} maxLength={MAX_HOUSE_LENGTH} />
         </div>
 
         {errMsg && <p className={styles.error}>{errMsg}</p>}
