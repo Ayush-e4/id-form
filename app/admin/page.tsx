@@ -17,6 +17,7 @@ export default function AdminPage() {
 
   async function load() {
     setLoading(true);
+    setError("");
     try {
       const res = await fetch("/api/submissions", { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to load");
@@ -36,7 +37,9 @@ export default function AdminPage() {
     return entries.filter(
       (e) =>
         e.name.toLowerCase().includes(q) ||
-        e.phone.includes(q)
+        (e.phone && e.phone.includes(q)) ||
+        (e.admissionNo && e.admissionNo.includes(q)) ||
+        (e.class && e.class.toLowerCase().includes(q))
     );
   }, [entries, search]);
 
@@ -49,15 +52,20 @@ export default function AdminPage() {
       for (const e of photoEntries) {
         try {
           const res = await fetch(e.photoUrl!);
+          if (!res.ok) throw new Error(`Failed to fetch ${e.photoUrl}`);
           const blob = await res.blob();
           
           const extMatch = e.photoUrl!.match(/\.([a-zA-Z0-9]+)(?:\?.*)?$/);
           let ext = extMatch ? extMatch[1] : 'jpg';
           if (ext.length > 4) ext = 'jpg';
+          const baseName = (e.phone || e.admissionNo || e.name || e.id)
+            .replace(/[^a-zA-Z0-9-_]+/g, "_")
+            .replace(/^_+|_+$/g, "")
+            .slice(0, 60) || e.id;
 
-          zip.file(`${e.phone}.${ext}`, blob);
+          zip.file(`${baseName}-${e.id.slice(-6)}.${ext}`, blob);
         } catch (err) {
-          console.error(`Failed to fetch photo for ${e.phone}`, err);
+          console.error(`Failed to fetch photo for ${e.id}`, err);
         }
       }
 
@@ -84,13 +92,10 @@ export default function AdminPage() {
     try {
       const res = await fetch(`/api/submissions/${id}`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
       });
       if (!res.ok) throw new Error("Delete failed");
       
-      // Update UI
-      setEntries(entries.filter(e => e.id !== id));
+      setEntries((current) => current.filter((entry) => entry.id !== id));
     } catch (err) {
       console.error(err);
       alert("Failed to delete entry.");
@@ -99,13 +104,24 @@ export default function AdminPage() {
 
   function downloadExcel() {
     const rows = entries.map((e) => ({
+      Type: e.type || "plant",
       Name: e.name,
-      "Phone Number": e.phone,
+      Class: e.class || "",
+      "Father's Name": e.fathersName || "",
+      "Mother's Name": e.mothersName || "",
+      DOB: e.dob || "",
+      Mobile: e.phone || "",
+      "Roll No": e.rollNo || "",
+      "Admission No": e.admissionNo || "",
+      Height: e.height || "",
+      Weight: e.weight || "",
+      "Blood Group": e.bloodGroup || "",
+      Address: e.address || "",
+      "House Name": e.houseName || "",
       "Photo URL": e.photoUrl ?? "Not uploaded",
       "Submitted At": new Date(e.submittedAt).toLocaleString("en-IN"),
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
-    ws["!cols"] = [{ wch: 26 }, { wch: 18 }, { wch: 52 }, { wch: 22 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Submissions");
     XLSX.writeFile(wb, "id_submissions.xlsx");
@@ -177,7 +193,7 @@ export default function AdminPage() {
           <input
             className={styles.search}
             type="text"
-            placeholder="Search by name or phone…"
+            placeholder="Search by name, phone, class, or admission no…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -195,9 +211,11 @@ export default function AdminPage() {
                 <tr>
                   <th style={{ width: "36px" }}>#</th>
                   <th style={{ width: "48px" }}></th>
-                  <th>Name</th>
-                  <th>Phone</th>
-                  <th>Photo Status</th>
+                  <th>Type</th>
+                  <th>Name / Student</th>
+                  <th>Class / Mobile</th>
+                  <th>Extra Info</th>
+                  <th>Photo</th>
                   <th>Submitted at</th>
                   <th style={{ width: "80px" }}>Actions</th>
                 </tr>
@@ -234,8 +252,32 @@ export default function AdminPage() {
                             <div className={styles.initials}>{initials}</div>
                           )}
                         </td>
-                        <td className={styles.nameCell}>{e.name}</td>
-                        <td className={styles.mono}>{e.phone}</td>
+                        <td>
+                          <span className={styles.typeBadge} data-type={e.type || 'plant'}>
+                            {(e.type || 'plant').toUpperCase()}
+                          </span>
+                        </td>
+                        <td className={styles.nameCell}>
+                          <div style={{ fontWeight: 600 }}>{e.name}</div>
+                          {e.fathersName && <div style={{ fontSize: '11px', opacity: 0.7 }}>S/O: {e.fathersName}</div>}
+                        </td>
+                        <td className={styles.mono}>
+                          {e.type === 'school' ? (
+                            <div>
+                               <div>Class: {e.class}</div>
+                               <div style={{ fontSize: '11px' }}>{e.phone}</div>
+                            </div>
+                          ) : e.phone}
+                        </td>
+                        <td>
+                          {e.type === 'school' ? (
+                            <div style={{ fontSize: '11px', lineHeight: 1.4 }}>
+                               {e.admissionNo && <div>Adm: {e.admissionNo}</div>}
+                               {e.bloodGroup && <div>Blood: {e.bloodGroup}</div>}
+                               {e.dob && <div>DOB: {e.dob}</div>}
+                            </div>
+                          ) : '-'}
+                        </td>
                         <td>
                           <span className={e.photoUrl ? styles.badgeYes : styles.badgeNo}>
                             {e.photoUrl ? "Uploaded" : "Missing"}

@@ -414,3 +414,27 @@
   border-color: rgba(255, 107, 107, 0.5);
   transform: scale(1.1);
 }
+
+.typeBadge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  color: var(--text-3);
+}
+
+.typeBadge[data-type='school'] {
+  background: rgba(108, 124, 255, 0.1);
+  border-color: rgba(108, 124, 255, 0.3);
+  color: var(--accent);
+}
+
+.typeBadge[data-type='plant'] {
+  background: rgba(76, 217, 100, 0.05);
+  border-color: rgba(76, 217, 100, 0.3);
+  color: var(--success);
+}

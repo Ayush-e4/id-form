@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import imageCompression from "browser-image-compression";
 import styles from "./page.module.css";
 
@@ -15,12 +15,37 @@ export default function FormPage() {
   const [errMsg, setErrMsg] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
+  const previewUrlRef = useRef<string | null>(null);
+
+  function replacePhotoPreview(file: File | null) {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
+
+    if (!file) {
+      setPhotoPreview(null);
+      return;
+    }
+
+    const nextUrl = URL.createObjectURL(file);
+    previewUrlRef.current = nextUrl;
+    setPhotoPreview(nextUrl);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+    };
+  }, []);
 
   async function onPhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    
-    setPhotoPreview(URL.createObjectURL(file));
+
+    replacePhotoPreview(file);
 
     try {
       const options = {
@@ -30,7 +55,7 @@ export default function FormPage() {
       };
       const compressedFile = await imageCompression(file, options);
       setPhotoFile(compressedFile);
-      setPhotoPreview(URL.createObjectURL(compressedFile));
+      replacePhotoPreview(compressedFile);
     } catch (err) {
       console.error(err);
       setErrMsg("Failed to compress the image. Please try another one.");
@@ -90,7 +115,12 @@ export default function FormPage() {
       const submitRes = await fetch("/api/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), phone: phone.trim(), photoKey }),
+        body: JSON.stringify({ 
+          name: name.trim(), 
+          phone: phone.trim(), 
+          photoKey,
+          type: "plant" 
+        }),
       });
       if (!submitRes.ok) throw new Error("Submission failed");
 
@@ -105,7 +135,7 @@ export default function FormPage() {
     setName("");
     setPhone("");
     setPhotoFile(null);
-    setPhotoPreview(null);
+    replacePhotoPreview(null);
     setErrMsg("");
     setStep("form");
     if (fileRef.current) fileRef.current.value = "";
@@ -159,11 +189,11 @@ export default function FormPage() {
             </div>
           ) : (
             <div className={styles.photoDualActions}>
-              <button className={styles.photoActionBtn} onClick={(e) => { e.preventDefault(); fileRef.current?.click(); }}>
+              <button className={styles.photoActionBtn} type="button" onClick={() => fileRef.current?.click()}>
                 <span className={styles.photoActionIcon}>🖼️</span>
                 Gallery
               </button>
-              <button className={styles.photoActionBtn} onClick={(e) => { e.preventDefault(); cameraRef.current?.click(); }}>
+              <button className={styles.photoActionBtn} type="button" onClick={() => cameraRef.current?.click()}>
                 <span className={styles.photoActionIcon}>📷</span>
                 Camera
               </button>

@@ -5,9 +5,10 @@ import { Submission } from "@/lib/types";
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, phone, photoKey } = await req.json();
+    const body = await req.json();
+    const { name, phone, photoKey, type = "plant" } = body;
 
-    if (!name || !phone) {
+    if (!name || (!phone && type === "plant")) {
       return NextResponse.json(
         { error: "name and phone are required" },
         { status: 400 }
@@ -23,9 +24,22 @@ export async function POST(req: NextRequest) {
     const entry: Submission = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       name: name.trim(),
-      phone: phone.trim(),
+      phone: (phone || "").trim(),
       photoUrl,
       submittedAt: new Date().toISOString(),
+      type,
+      // School specific fields
+      fathersName: body.fathersName,
+      mothersName: body.mothersName,
+      class: body.class,
+      dob: body.dob,
+      address: body.address,
+      rollNo: body.rollNo,
+      admissionNo: body.admissionNo,
+      height: body.height,
+      weight: body.weight,
+      bloodGroup: body.bloodGroup,
+      houseName: body.houseName,
     };
 
     await appendSubmission(entry);

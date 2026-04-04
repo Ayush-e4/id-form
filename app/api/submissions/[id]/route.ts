@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { deleteSubmission } from "@/lib/submissions";
 
-export async function DELETE(req: NextRequest) {
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = await req.json();
+    const id = params.id;
 
     if (!id) {
       return NextResponse.json({ error: "Missing ID" }, { status: 400 });

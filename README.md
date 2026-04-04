@@ -28,8 +28,12 @@ A premium Next.js 14 application for collecting ID card details (Name, Phone, an
    ```
 
 2. **Supabase Config**:
-   - Create a table `submissions` with columns: `id`, `name`, `phone`, `photoUrl`, `submittedAt`.
+   - Create a table `submissions` with columns:
+     `id`, `name`, `phone`, `photoUrl`, `submittedAt`, `type`,
+     `fathersName`, `mothersName`, `class`, `dob`, `address`,
+     `rollNo`, `admissionNo`, `height`, `weight`, `bloodGroup`, `houseName`.
    - Create a public storage bucket named `photos`.
+   - You can run the SQL in `supabase/submissions_schema.sql` to create or update the table.
 
 3. **Environment**:
    Create a `.env.local` with your Supabase credentials:
