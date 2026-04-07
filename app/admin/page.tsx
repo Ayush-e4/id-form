@@ -1,19 +1,38 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import styles from "./page.module.css";
 import { buildSchoolSummary, getCalendarDate } from "@/lib/admin";
+import { plantConfigs } from "@/lib/plants";
+import { schoolConfigs } from "@/lib/schools";
 import { readSubmissions } from "@/lib/submissions";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
+  const headerStore = await headers();
   const entries = await readSubmissions();
   const schoolSummary = buildSchoolSummary(entries);
   const todayKey = getCalendarDate(new Date().toISOString());
   const todayCount = entries.filter((entry) => getCalendarDate(entry.submittedAt) === todayKey).length;
-  const missingPhoto = entries.filter((entry) => !entry.photoUrl).length;
   const activeSchools = schoolSummary.filter((school) => school.entryCount > 0);
-  const topSchool = activeSchools[0];
   const recentEntries = entries.slice(0, 8);
+  const host = headerStore.get("x-forwarded-host") || headerStore.get("host") || "burmanstudio.online";
+  const protocol = headerStore.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
+  const origin = `${protocol}://${host}`;
+  const shareableRoutes = [
+    ...plantConfigs.map((plant) => ({
+      label: plant.name,
+      type: "Plant",
+      href: `${origin}/plants/${plant.slug}`,
+      path: `/plants/${plant.slug}`,
+    })),
+    ...schoolConfigs.map((school) => ({
+      label: school.name,
+      type: "School",
+      href: `${origin}/schools/${school.slug}`,
+      path: `/schools/${school.slug}`,
+    })),
+  ];
 
   return (
     <main className={styles.main}>
@@ -52,23 +71,25 @@ export default async function AdminDashboardPage() {
         <section className={styles.panel}>
           <div className={styles.panelHeader}>
             <div>
-              <h2 className={styles.panelTitle}>Health Snapshot</h2>
-              <p className={styles.panelMeta}>Quick indicators for operations</p>
+              <h2 className={styles.panelTitle}>Shareable Routes</h2>
+              <p className={styles.panelMeta}>Quick links the admin can copy and send to plants and schools</p>
             </div>
           </div>
-          <div className={styles.kpiList}>
-            <div className={styles.kpiRow}>
-              <span>Missing photos</span>
-              <strong>{missingPhoto}</strong>
-            </div>
-            <div className={styles.kpiRow}>
-              <span>Photos uploaded</span>
-              <strong>{entries.length - missingPhoto}</strong>
-            </div>
-            <div className={styles.kpiRow}>
-              <span>Top school</span>
-              <strong>{topSchool ? `${topSchool.name} (${topSchool.entryCount})` : "No data yet"}</strong>
-            </div>
+          <div className={styles.routeList}>
+            {shareableRoutes.map((route) => (
+              <div key={route.href} className={styles.routeRow}>
+                <div className={styles.routeTop}>
+                  <div>
+                    <div className={styles.routeLabel}>{route.label}</div>
+                    <div className={styles.routePath}>{route.path}</div>
+                  </div>
+                  <span className={styles.routeType}>{route.type}</span>
+                </div>
+                <a href={route.href} target="_blank" rel="noreferrer" className={styles.routeLink}>
+                  {route.href}
+                </a>
+              </div>
+            ))}
           </div>
         </section>
 
