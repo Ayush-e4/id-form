@@ -172,6 +172,12 @@
   line-height: 1;
 }
 
+.statSub {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
 /* Toolbar */
 .toolbar {
   display: flex;

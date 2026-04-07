@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import styles from "./page.module.css";
-import { buildSchoolSummary, getCalendarDate } from "@/lib/admin";
+import { buildSchoolSummary, formatStorageUsage, getCalendarDate, getPhotoStorageUsage } from "@/lib/admin";
 import { plantConfigs } from "@/lib/plants";
 import { schoolConfigs } from "@/lib/schools";
 import { readSubmissions } from "@/lib/submissions";
@@ -14,7 +14,7 @@ export default async function AdminDashboardPage() {
   const schoolSummary = buildSchoolSummary(entries);
   const todayKey = getCalendarDate(new Date().toISOString());
   const todayCount = entries.filter((entry) => getCalendarDate(entry.submittedAt) === todayKey).length;
-  const activeSchools = schoolSummary.filter((school) => school.entryCount > 0);
+  const storageUsage = await getPhotoStorageUsage();
   const recentEntries = entries.slice(0, 8);
   const host = headerStore.get("x-forwarded-host") || headerStore.get("host") || "burmanstudio.online";
   const protocol = headerStore.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
@@ -54,8 +54,9 @@ export default async function AdminDashboardPage() {
           <div className={styles.statVal}>{schoolSummary.length}</div>
         </div>
         <div className={styles.stat}>
-          <div className={styles.statLabel}>Active schools</div>
-          <div className={styles.statVal}>{activeSchools.length}</div>
+          <div className={styles.statLabel}>Storage used</div>
+          <div className={styles.statVal}>{formatStorageUsage(storageUsage.bytes)}</div>
+          <div className={styles.statSub}>{storageUsage.objectCount} photo files</div>
         </div>
         <div className={styles.stat}>
           <div className={styles.statLabel}>Total students</div>
