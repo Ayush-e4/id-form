@@ -368,7 +368,7 @@ export default function SubmissionsView() {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th style={{ width: "44px" }}>
+                <th style={{ width: "44px" }} className={styles.selectionCell}>
                   <input
                     ref={selectAllRef}
                     type="checkbox"
@@ -379,7 +379,7 @@ export default function SubmissionsView() {
                     className={styles.rowCheckbox}
                   />
                 </th>
-                <th style={{ width: "52px" }}>#</th>
+                <th style={{ width: "52px" }} className={styles.indexCell}>#</th>
                 <th style={{ width: "48px" }}></th>
                 <th>Type</th>
                 <th>Name / Student</th>
@@ -408,7 +408,7 @@ export default function SubmissionsView() {
 
                   return (
                     <tr key={e.id}>
-                      <td>
+                      <td className={styles.selectionCell}>
                         <input
                           type="checkbox"
                           checked={selectedIds.includes(e.id)}
@@ -418,7 +418,7 @@ export default function SubmissionsView() {
                           disabled={deletingIds.length > 0}
                         />
                       </td>
-                      <td className={styles.rowNum}>{i + 1}</td>
+                      <td className={`${styles.rowNum} ${styles.indexCell}`}>{i + 1}</td>
                       <td>
                         {e.photoUrl ? (
                           <Image

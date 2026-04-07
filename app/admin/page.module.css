@@ -262,6 +262,24 @@
   vertical-align: middle;
 }
 
+.selectionCell {
+  width: 44px;
+  padding: 10px 8px !important;
+  text-align: center;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
+}
+
+.indexCell {
+  width: 52px;
+  padding: 10px 8px !important;
+  text-align: center;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
+}
+
 .rowNum {
   color: var(--text-3) !important;
   font-size: 12px !important;
@@ -276,6 +294,8 @@
   height: 16px;
   accent-color: #6c7cff;
   cursor: pointer;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 .bulkActions {
