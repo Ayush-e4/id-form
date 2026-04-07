@@ -14,7 +14,7 @@ export default async function AdminDashboardPage() {
   const schoolSummary = buildSchoolSummary(entries);
   const todayKey = getCalendarDate(new Date().toISOString());
   const todayCount = entries.filter((entry) => getCalendarDate(entry.submittedAt) === todayKey).length;
-  const storageUsage = await getPhotoStorageUsage();
+  const storageUsage = await getPhotoStorageUsage(entries);
   const recentEntries = entries.slice(0, 8);
   const host = headerStore.get("x-forwarded-host") || headerStore.get("host") || "burmanstudio.online";
   const protocol = headerStore.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
@@ -55,8 +55,11 @@ export default async function AdminDashboardPage() {
         </div>
         <div className={styles.stat}>
           <div className={styles.statLabel}>Storage used</div>
-          <div className={styles.statVal}>{formatStorageUsage(storageUsage.bytes)}</div>
-          <div className={styles.statSub}>{storageUsage.objectCount} photo files</div>
+          <div className={styles.statVal}>{formatStorageUsage(storageUsage.total.bytes)}</div>
+          <div className={styles.statSub}>
+            {storageUsage.linked.objectCount} linked photos
+            {storageUsage.orphaned.objectCount > 0 ? `, ${storageUsage.orphaned.objectCount} extra files` : ""}
+          </div>
         </div>
         <div className={styles.stat}>
           <div className={styles.statLabel}>Total students</div>

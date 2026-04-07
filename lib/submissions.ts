@@ -178,7 +178,10 @@ export async function deleteSubmission(id: string): Promise<void> {
 
   if (storagePath) {
     try {
-      await supabase.storage.from("photos").remove([storagePath]);
+      const { error: storageError } = await supabase.storage.from("photos").remove([storagePath]);
+      if (storageError) {
+        console.error("Failed to delete storage file:", storageError);
+      }
     } catch (e) {
       console.error("Failed to delete storage file:", e);
     }
