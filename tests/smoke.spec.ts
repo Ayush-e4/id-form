@@ -45,10 +45,11 @@ async function loginAsAdmin(page: Parameters<typeof test>[0]["page"], next = "/a
 }
 
 test.describe("route smoke checks", () => {
-  test("root redirects to the plant route", async ({ page }) => {
+  test("root shows the coming soon landing page", async ({ page }) => {
     await page.goto("/");
-    await expect(page).toHaveURL(/\/plants\/bml-plant$/);
-    await expect(page.getByRole("heading", { name: "BML Plant ID Card" })).toBeVisible();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByRole("heading", { name: "Coming soon" })).toBeVisible();
+    await expect(page.getByText("Our public site is on the way.")).toBeVisible();
   });
 
   test("school route renders the simplified title and compact photo picker", async ({ page }) => {
