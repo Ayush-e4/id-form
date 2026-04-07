@@ -5,8 +5,8 @@ import "./globals.css";
 const dmSans = DM_Sans({ subsets: ["latin"], weight: ["400", "500"] });
 
 export const metadata: Metadata = {
-  title: "ID Registration",
-  description: "Submit your details for ID card generation",
+  title: "Burman Studio",
+  description: "Burman Studio forms and submission portal",
 };
 
 export const viewport: Viewport = {

@@ -3,8 +3,13 @@ export interface Submission {
   name: string;
   phone: string;
   photoUrl: string | null;
+  photoKey?: string | null;
   submittedAt: string; // ISO string
   type?: 'plant' | 'school';
+  plantSlug?: string;
+  plantName?: string;
+  schoolSlug?: string;
+  schoolName?: string;
   
   // School fields
   fathersName?: string;

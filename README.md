@@ -1,6 +1,6 @@
 # ID Card - Registration & Management
 
-A premium Next.js 14 application for collecting ID card details (Name, Phone, and Compressed Photo). 
+A Next.js 15 application for collecting ID card details, uploading compressed photos, and managing submissions from an admin dashboard.
 
 ## ✨ Features
 
@@ -15,7 +15,7 @@ A premium Next.js 14 application for collecting ID card details (Name, Phone, an
 
 ## 🚀 Tech Stack
 
-- **Framework**: Next.js 14 (App Router)
+- **Framework**: Next.js 15 (App Router)
 - **Database & Storage**: Supabase (PostgreSQL + S3 Storage)
 - **Styling**: Vanilla CSS (Custom Glassmorphism Design System)
 - **Utilities**: JSZip, XLSX, Browser Image Compression
@@ -36,11 +36,17 @@ A premium Next.js 14 application for collecting ID card details (Name, Phone, an
    - You can run the SQL in `supabase/submissions_schema.sql` to create or update the table.
 
 3. **Environment**:
-   Create a `.env.local` with your Supabase credentials:
+   Create a `.env.local` with your production credentials:
    ```env
    NEXT_PUBLIC_SUPABASE_URL=your_project_url
    SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+   ADMIN_PASSWORD=your_admin_password
+   ADMIN_SESSION_SECRET=long_random_session_secret
    ```
+
+   Notes:
+   - `ADMIN_SESSION_SECRET` should be different from `ADMIN_PASSWORD`.
+   - Image previews in the admin dashboard are limited to your configured Supabase host plus localhost test hosts.
 
 4. **Run**:
    ```bash

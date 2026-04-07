@@ -4,25 +4,30 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 24px;
+  padding: 32px 24px;
+  background:
+    radial-gradient(circle at top left, rgba(255, 193, 7, 0.32), transparent 34%),
+    radial-gradient(circle at top right, rgba(33, 150, 243, 0.22), transparent 30%),
+    radial-gradient(circle at bottom left, rgba(255, 87, 34, 0.2), transparent 32%),
+    linear-gradient(180deg, #fffaf1 0%, #fff3f4 52%, #f4f8ff 100%);
 }
 
 .header {
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 26px;
 }
 
 .title {
   font-size: 32px;
-  font-weight: 500;
-  color: var(--text);
+  font-weight: 700;
+  color: #1f2a44;
   letter-spacing: -0.02em;
 }
 
 .sub {
   font-size: 15px;
-  color: var(--text-2);
-  margin-top: 6px;
+  color: #6b7280;
+  margin-top: 8px;
 }
 
 .body {
@@ -32,12 +37,14 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  background: var(--surface);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--border);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 30px;
+  border: 1px solid rgba(255, 167, 38, 0.22);
+  box-shadow:
+    0 18px 50px rgba(255, 111, 97, 0.12),
+    0 8px 24px rgba(25, 118, 210, 0.08);
   animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
@@ -51,9 +58,11 @@
   width: 100%;
   aspect-ratio: 4/3;
   max-height: 240px;
-  border-radius: var(--radius-lg);
-  border: 2px dashed var(--border-strong);
-  background: rgba(0,0,0,0.2);
+  border-radius: 24px;
+  border: 2px dashed rgba(25, 118, 210, 0.22);
+  background:
+    linear-gradient(135deg, rgba(255, 224, 178, 0.42), rgba(227, 242, 253, 0.7)),
+    #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -63,9 +72,105 @@
   transition: all 0.2s;
 }
 
+.photoPickerWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 4px;
+}
+
+.photoPickerButton {
+  position: relative;
+  width: 124px;
+  height: 124px;
+  border: 3px solid rgba(25, 118, 210, 0.16);
+  border-radius: 999px;
+  background:
+    linear-gradient(135deg, rgba(255, 224, 178, 0.9), rgba(227, 242, 253, 0.92)),
+    #ffffff;
+  box-shadow:
+    0 16px 36px rgba(251, 140, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.photoPickerButton:hover {
+  transform: translateY(-2px);
+  border-color: rgba(239, 83, 80, 0.25);
+  box-shadow:
+    0 18px 40px rgba(239, 83, 80, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.photoPickerPreview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photoPickerGlyph {
+  font-size: 52px;
+  line-height: 1;
+}
+
+.photoPickerBadge {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #ef5350, #fb8c00);
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 600;
+  box-shadow: 0 10px 18px rgba(239, 83, 80, 0.24);
+}
+
+.photoPickerHint {
+  font-size: 13px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.photoActionSheet {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.photoActionChip {
+  min-width: 108px;
+  padding: 12px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 167, 38, 0.28);
+  background: rgba(255, 255, 255, 0.94);
+  color: #24324a;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 10px 22px rgba(25, 118, 210, 0.06);
+  transition: transform 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.photoActionChip:hover {
+  transform: translateY(-2px);
+  border-color: #1976d2;
+  background: rgba(227, 242, 253, 0.95);
+}
+
 .photoZone:hover {
-  border-color: var(--accent);
-  background: rgba(108, 124, 255, 0.05);
+  border-color: #ff7043;
+  background:
+    linear-gradient(135deg, rgba(255, 224, 178, 0.72), rgba(227, 242, 253, 0.95)),
+    #ffffff;
 }
 
 .photoZone:active {
@@ -94,19 +199,20 @@
   justify-content: center;
   gap: 8px;
   padding: 24px 0;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  color: var(--text);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 167, 38, 0.28);
+  border-radius: 18px;
+  color: #24324a;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   transition: all 0.2s;
   cursor: pointer;
+  box-shadow: 0 10px 24px rgba(25, 118, 210, 0.06);
 }
 
 .photoActionBtn:hover {
-  border-color: var(--accent);
-  background: rgba(108, 124, 255, 0.05);
+  border-color: #1976d2;
+  background: rgba(227, 242, 253, 0.95);
   transform: translateY(-2px);
 }
 
@@ -117,8 +223,8 @@
 .changeOverlay {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.5);
-  color: white;
+  background: linear-gradient(180deg, rgba(25, 118, 210, 0.08), rgba(244, 67, 54, 0.5));
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -141,8 +247,8 @@
 .label {
   font-size: 12px;
   letter-spacing: 0.08em;
-  color: var(--text-3);
-  font-weight: 500;
+  color: #ef6c00;
+  font-weight: 700;
   text-transform: uppercase;
 }
 
@@ -150,33 +256,34 @@
   width: 100%;
   padding: 16px 18px;
   font-size: 16px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: rgba(0,0,0,0.2);
-  color: var(--text);
+  border-radius: 18px;
+  border: 1px solid rgba(255, 183, 77, 0.35);
+  background: rgba(255, 255, 255, 0.96);
+  color: #1f2937;
   outline: none;
   -webkit-appearance: none;
   appearance: none;
   transition: all 0.2s;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .input:focus {
-  border-color: var(--accent);
-  background: rgba(0,0,0,0.4);
-  box-shadow: 0 0 0 4px rgba(108, 124, 255, 0.1);
+  border-color: #1976d2;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.12);
 }
 
 .input::placeholder {
-  color: var(--text-3);
+  color: #9ca3af;
 }
 
 .error {
   font-size: 14px;
-  color: #ff6b6b;
+  color: #c62828;
   padding: 12px 16px;
-  background: rgba(255, 107, 107, 0.1);
-  border: 1px solid rgba(255, 107, 107, 0.2);
-  border-radius: var(--radius-sm);
+  background: rgba(255, 235, 238, 0.95);
+  border: 1px solid rgba(244, 67, 54, 0.2);
+  border-radius: 14px;
   animation: shake 0.4s ease-in-out;
 }
 
@@ -191,19 +298,19 @@
   padding: 18px;
   font-size: 16px;
   font-weight: 600;
-  background: linear-gradient(135deg, var(--accent), #8895ff);
-  color: var(--accent-fg);
+  background: linear-gradient(135deg, #ef5350, #fb8c00 55%, #ffca28);
+  color: #ffffff;
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: 20px;
   margin-top: 8px;
   transition: all 0.2s;
   letter-spacing: 0.02em;
-  box-shadow: 0 4px 12px rgba(108, 124, 255, 0.3);
+  box-shadow: 0 14px 28px rgba(239, 83, 80, 0.22);
 }
 
 .submitBtn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(108, 124, 255, 0.4);
+  box-shadow: 0 18px 30px rgba(251, 140, 0, 0.24);
 }
 
 .submitBtn:active {
@@ -226,12 +333,14 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  background: var(--surface);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--border);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 30px;
+  border: 1px solid rgba(255, 167, 38, 0.22);
+  box-shadow:
+    0 18px 50px rgba(255, 111, 97, 0.12),
+    0 8px 24px rgba(25, 118, 210, 0.08);
   animation: zoomIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
@@ -244,9 +353,9 @@
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: var(--success-bg);
-  border: 2px solid rgba(76, 217, 100, 0.3);
-  color: var(--success);
+  background: linear-gradient(135deg, rgba(255, 202, 40, 0.22), rgba(33, 150, 243, 0.18));
+  border: 2px solid rgba(255, 152, 0, 0.24);
+  color: #2e7d32;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -256,15 +365,15 @@
 
 .successTitle {
   font-size: 26px;
-  font-weight: 500;
-  color: var(--text);
+  font-weight: 700;
+  color: #1f2a44;
   margin-bottom: 10px;
   letter-spacing: -0.02em;
 }
 
 .successSub {
   font-size: 15px;
-  color: var(--text-2);
+  color: #6b7280;
   line-height: 1.6;
 }
 
@@ -272,24 +381,24 @@
   margin-top: 32px;
   padding: 14px 28px;
   font-size: 15px;
-  font-weight: 500;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-strong);
-  background: transparent;
-  color: var(--text);
+  font-weight: 600;
+  border-radius: 18px;
+  border: 1px solid rgba(25, 118, 210, 0.2);
+  background: rgba(227, 242, 253, 0.88);
+  color: #1565c0;
   transition: all 0.2s;
 }
 
 .resetBtn:hover {
-  background: var(--surface-2);
-  border-color: var(--border-strong);
+  background: rgba(255, 243, 224, 0.98);
+  border-color: rgba(255, 112, 67, 0.28);
 }
 
 .spinner {
   width: 20px;
   height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #ffffff;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   display: inline-block;
@@ -311,6 +420,24 @@
   max-width: 600px;
 }
 
+.schoolGrid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.schoolGridItemFull {
+  grid-column: span 6;
+}
+
+.schoolGridItemHalf {
+  grid-column: span 3;
+}
+
+.schoolGridItemThird {
+  grid-column: span 2;
+}
+
 .schoolGrid2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -325,6 +452,35 @@
 
 .bloodGroupField {
   min-width: 0;
+}
+
+.schoolListBody {
+  max-width: 600px;
+}
+
+.schoolCard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px 20px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 167, 38, 0.2);
+  background: rgba(255, 255, 255, 0.88);
+  color: #22304a;
+  text-decoration: none;
+  transition: transform 0.2s, border-color 0.2s, background 0.2s;
+  box-shadow: 0 12px 28px rgba(25, 118, 210, 0.06);
+}
+
+.schoolCard:hover {
+  transform: translateY(-2px);
+  border-color: #ef5350;
+  background: linear-gradient(135deg, rgba(255, 243, 224, 0.95), rgba(227, 242, 253, 0.95));
+}
+
+.schoolCard span {
+  color: #6b7280;
+  font-size: 13px;
 }
 
 @media (max-width: 640px) {
@@ -349,8 +505,10 @@
     max-width: none;
     padding: 22px 18px 18px;
     gap: 16px;
-    border-radius: 24px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+    border-radius: 26px;
+    box-shadow:
+      0 14px 36px rgba(255, 111, 97, 0.12),
+      0 6px 18px rgba(25, 118, 210, 0.08);
   }
 
   .photoZone {
@@ -374,6 +532,19 @@
     font-size: 22px;
   }
 
+  .photoPickerButton {
+    width: 112px;
+    height: 112px;
+  }
+
+  .photoActionSheet {
+    width: 100%;
+  }
+
+  .photoActionChip {
+    flex: 1 1 140px;
+  }
+
   .field {
     gap: 6px;
   }
@@ -394,6 +565,17 @@
     gap: 14px;
   }
 
+  .schoolGrid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .schoolGridItemFull,
+  .schoolGridItemHalf,
+  .schoolGridItemThird {
+    grid-column: span 1;
+  }
+
   .schoolGrid3 {
     grid-template-columns: 1fr 1fr;
     gap: 14px;
@@ -408,6 +590,6 @@
     margin-top: 4px;
     border-radius: 20px;
     font-size: 17px;
-    box-shadow: 0 10px 24px rgba(108, 124, 255, 0.32);
+    box-shadow: 0 12px 24px rgba(251, 140, 0, 0.24);
   }
 }
