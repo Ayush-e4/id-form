@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ExcelJS from "exceljs";
 import JSZip from "jszip";
 import Image from "next/image";
@@ -28,6 +28,9 @@ export default function SubmissionsView() {
   const [schoolFilter, setSchoolFilter] = useState("all");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [downloadingZip, setDownloadingZip] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [deletingIds, setDeletingIds] = useState<string[]>([]);
+  const selectAllRef = useRef<HTMLInputElement>(null);
 
   async function load() {
     setLoading(true);
@@ -36,6 +39,7 @@ export default function SubmissionsView() {
       const res = await fetch("/api/submissions", { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to load");
       setEntries(await res.json());
+      setSelectedIds([]);
     } catch {
       setError("Could not load submissions.");
     } finally {
@@ -87,6 +91,49 @@ export default function SubmissionsView() {
     );
   }, [entries, schoolFilter, search]);
 
+  const filteredIds = useMemo(() => filtered.map((entry) => entry.id), [filtered]);
+  const visibleSelectedIds = useMemo(
+    () => selectedIds.filter((id) => filteredIds.includes(id)),
+    [filteredIds, selectedIds]
+  );
+  const allFilteredSelected = filteredIds.length > 0 && visibleSelectedIds.length === filteredIds.length;
+  const someFilteredSelected = visibleSelectedIds.length > 0 && !allFilteredSelected;
+
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = someFilteredSelected;
+    }
+  }, [someFilteredSelected]);
+
+  function toggleSelection(id: string) {
+    setSelectedIds((current) => (current.includes(id) ? current.filter((entryId) => entryId !== id) : [...current, id]));
+  }
+
+  function toggleSelectAll() {
+    setSelectedIds((current) => {
+      if (allFilteredSelected) {
+        return current.filter((id) => !filteredIds.includes(id));
+      }
+
+      return Array.from(new Set([...current, ...filteredIds]));
+    });
+  }
+
+  async function deleteEntries(ids: string[]) {
+    const failures: string[] = [];
+
+    for (const id of ids) {
+      const response = await fetch(`/api/submissions/${id}`, { method: "DELETE" });
+      if (!response.ok) {
+        failures.push(id);
+      }
+    }
+
+    if (failures.length > 0) {
+      throw new Error("Some entries could not be deleted.");
+    }
+  }
+
   async function downloadPhotosZip() {
     setDownloadingZip(true);
     try {
@@ -133,13 +180,36 @@ export default function SubmissionsView() {
   async function handleDelete(id: string, name: string) {
     if (!confirm(`Are you sure you want to delete ${name}'s entry? This will also remove their photo.`)) return;
 
+    setDeletingIds((current) => [...current, id]);
     try {
-      const res = await fetch(`/api/submissions/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Delete failed");
+      await deleteEntries([id]);
       setEntries((current) => current.filter((entry) => entry.id !== id));
+      setSelectedIds((current) => current.filter((entryId) => entryId !== id));
     } catch (err) {
       console.error(err);
       alert("Failed to delete entry.");
+    } finally {
+      setDeletingIds((current) => current.filter((entryId) => entryId !== id));
+    }
+  }
+
+  async function handleBulkDelete() {
+    if (visibleSelectedIds.length === 0) return;
+    if (!confirm(`Delete ${visibleSelectedIds.length} selected entr${visibleSelectedIds.length === 1 ? "y" : "ies"}? This will also remove their photos.`)) {
+      return;
+    }
+
+    setDeletingIds(visibleSelectedIds);
+
+    try {
+      await deleteEntries(visibleSelectedIds);
+      setEntries((current) => current.filter((entry) => !visibleSelectedIds.includes(entry.id)));
+      setSelectedIds((current) => current.filter((id) => !visibleSelectedIds.includes(id)));
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete one or more selected entries.");
+    } finally {
+      setDeletingIds([]);
     }
   }
 
@@ -265,6 +335,28 @@ export default function SubmissionsView() {
         />
       </div>
 
+      <div className={styles.bulkActions}>
+        <label className={styles.bulkSelect}>
+          <input
+            type="checkbox"
+            checked={allFilteredSelected}
+            onChange={toggleSelectAll}
+            disabled={filtered.length === 0 || deletingIds.length > 0}
+          />
+          <span>Select all shown</span>
+        </label>
+        <div className={styles.bulkMeta}>
+          {visibleSelectedIds.length === 0 ? "No entries selected" : `${visibleSelectedIds.length} selected`}
+        </div>
+        <button
+          className={styles.bulkDeleteBtn}
+          onClick={handleBulkDelete}
+          disabled={visibleSelectedIds.length === 0 || deletingIds.length > 0}
+        >
+          {deletingIds.length > 0 ? "Deleting..." : "Delete selected"}
+        </button>
+      </div>
+
       {loading ? (
         <div className={styles.empty}>Loading…</div>
       ) : error ? (
@@ -276,7 +368,18 @@ export default function SubmissionsView() {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th style={{ width: "36px" }}>#</th>
+                <th style={{ width: "44px" }}>
+                  <input
+                    ref={selectAllRef}
+                    type="checkbox"
+                    checked={allFilteredSelected}
+                    onChange={toggleSelectAll}
+                    disabled={filtered.length === 0 || deletingIds.length > 0}
+                    aria-label="Select all entries"
+                    className={styles.rowCheckbox}
+                  />
+                </th>
+                <th style={{ width: "52px" }}>#</th>
                 <th style={{ width: "48px" }}></th>
                 <th>Type</th>
                 <th>Name / Student</th>
@@ -284,13 +387,13 @@ export default function SubmissionsView() {
                 <th>Extra Info</th>
                 <th>Photo</th>
                 <th>Submitted at</th>
-                <th style={{ width: "80px" }}>Actions</th>
+                <th style={{ width: "96px" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className={styles.emptyRow}>
+                  <td colSpan={10} className={styles.emptyRow}>
                     {search || schoolFilter !== "all" ? "No matching submissions found." : "No submissions yet."}
                   </td>
                 </tr>
@@ -305,6 +408,16 @@ export default function SubmissionsView() {
 
                   return (
                     <tr key={e.id}>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(e.id)}
+                          onChange={() => toggleSelection(e.id)}
+                          aria-label={`Select ${e.name}`}
+                          className={styles.rowCheckbox}
+                          disabled={deletingIds.length > 0}
+                        />
+                      </td>
                       <td className={styles.rowNum}>{i + 1}</td>
                       <td>
                         {e.photoUrl ? (
@@ -365,7 +478,12 @@ export default function SubmissionsView() {
                         })}
                       </td>
                       <td>
-                        <button className={styles.deleteBtn} onClick={() => handleDelete(e.id, e.name)} title="Delete Entry">
+                        <button
+                          className={styles.deleteBtn}
+                          onClick={() => handleDelete(e.id, e.name)}
+                          title="Delete Entry"
+                          disabled={deletingIds.includes(e.id)}
+                        >
                           🗑️
                         </button>
                       </td>
