@@ -3,9 +3,52 @@ import { Submission } from "./types";
 
 type SubmissionRow = Record<string, unknown>;
 export class SubmissionNotFoundError extends Error {}
+const MAX_INSERT_RETRIES = 10;
 
 function asOptionalString(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
+}
+
+function parseMissingColumn(error: { code?: string; message?: string } | null) {
+  if (!error || error.code !== "PGRST204" || !error.message) {
+    return null;
+  }
+
+  const match = error.message.match(/Could not find the '([^']+)' column/);
+  return match?.[1] ?? null;
+}
+
+function buildInsertPayload(entry: Submission, omittedColumns: Set<string>) {
+  const payload: Record<string, unknown> = {
+    id: entry.id,
+    name: entry.name,
+    phone: entry.phone,
+    photoUrl: entry.photoUrl,
+    photoKey: entry.photoKey,
+    submittedAt: entry.submittedAt,
+    type: entry.type,
+    plantSlug: entry.plantSlug,
+    plantName: entry.plantName,
+    schoolSlug: entry.schoolSlug,
+    schoolName: entry.schoolName,
+    fathersName: entry.fathersName,
+    mothersName: entry.mothersName,
+    class: entry.class,
+    dob: entry.dob,
+    address: entry.address,
+    rollNo: entry.rollNo,
+    admissionNo: entry.admissionNo,
+    height: entry.height,
+    weight: entry.weight,
+    bloodGroup: entry.bloodGroup,
+    houseName: entry.houseName,
+  };
+
+  for (const column of Array.from(omittedColumns)) {
+    delete payload[column];
+  }
+
+  return payload;
 }
 
 function normalizeSubmission(row: SubmissionRow): Submission {
@@ -53,11 +96,27 @@ export async function readSubmissions(): Promise<Submission[]> {
 }
 
 export async function appendSubmission(entry: Submission): Promise<void> {
-  const { error } = await supabase
-    .from('submissions')
-    .insert([entry]);
+  const omittedColumns = new Set<string>();
 
-  if (error) throw error;
+  for (let attempt = 0; attempt < MAX_INSERT_RETRIES; attempt += 1) {
+    const payload = buildInsertPayload(entry, omittedColumns);
+    const { error } = await supabase
+      .from("submissions")
+      .insert([payload]);
+
+    if (!error) {
+      return;
+    }
+
+    const missingColumn = parseMissingColumn(error);
+    if (!missingColumn || omittedColumns.has(missingColumn)) {
+      throw error;
+    }
+
+    omittedColumns.add(missingColumn);
+  }
+
+  throw new Error("Failed to insert submission after retrying unsupported columns");
 }
 
 export async function deleteSubmission(id: string): Promise<void> {
