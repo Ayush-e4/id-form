@@ -58,19 +58,13 @@ export default function PlantRegistrationForm({ plant }: { plant: PlantConfig })
 
   async function handleCropConfirm(croppedFile: File) {
     try {
-      const { default: imageCompression } = await import("browser-image-compression");
-      const compressedFile = await imageCompression(croppedFile, {
-        maxSizeMB: 2,
-        maxWidthOrHeight: 1920,
-        useWebWorker: true,
-      });
-      setPhotoFile(compressedFile);
-      replacePhotoPreview(compressedFile);
+      setPhotoFile(croppedFile);
+      replacePhotoPreview(croppedFile);
       setCropSourceFile(null);
       setErrMsg("");
     } catch (err) {
       console.error(err);
-      setErrMsg("Failed to compress the image. Please try another one.");
+      setErrMsg("Failed to prepare the image. Please try another one.");
     }
   }
 

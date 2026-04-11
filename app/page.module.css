@@ -300,15 +300,43 @@
   width: min(100%, 540px);
   padding: 22px;
   border-radius: 28px;
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid rgba(255, 167, 38, 0.24);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 250, 244, 0.94)),
+    rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(255, 167, 38, 0.2);
   box-shadow:
-    0 24px 60px rgba(31, 42, 68, 0.18),
-    0 10px 28px rgba(239, 83, 80, 0.12);
+    0 26px 70px rgba(31, 42, 68, 0.22),
+    0 14px 32px rgba(239, 83, 80, 0.14);
 }
 
 .cropModalHeader {
-  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.cropCloseBtn {
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(31, 42, 68, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.68);
+  color: #24324a;
+  font-size: 22px;
+  line-height: 1;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.cropCloseBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.cropCloseBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .cropModalTitle {
@@ -316,13 +344,7 @@
   font-weight: 700;
   color: #1f2a44;
   letter-spacing: -0.03em;
-}
-
-.cropModalText {
-  margin-top: 8px;
-  font-size: 14px;
-  line-height: 1.6;
-  color: #5f6b7a;
+  margin: 0;
 }
 
 .cropFrameWrap {
@@ -330,9 +352,14 @@
   width: 100%;
   height: min(72vw, 460px);
   min-height: 320px;
-  border-radius: 24px;
+  border-radius: 0;
   overflow: hidden;
-  background: linear-gradient(180deg, #121928, #1f2a44);
+  background:
+    radial-gradient(circle at top, rgba(255, 214, 153, 0.12), transparent 38%),
+    linear-gradient(180deg, #111723, #1f2a44);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 12px 26px rgba(31, 42, 68, 0.14);
 }
 
 .cropLoadingOverlay {
@@ -349,31 +376,60 @@
   font-size: 14px;
 }
 
-.cropGuide {
-  position: absolute;
-  inset: 18px;
-  border: 2px dashed rgba(255, 255, 255, 0.75);
-  border-radius: 28px;
-  pointer-events: none;
-  box-shadow: inset 0 0 0 999px rgba(18, 22, 34, 0.18);
+.cropAreaFrame {
+  border: 2px dashed rgba(255, 255, 255, 0.82) !important;
+  border-radius: 0 !important;
+  box-shadow: inset 0 0 0 9999em rgba(11, 16, 28, 0.22);
 }
 
 .cropGuideLabel {
   position: absolute;
   left: 50%;
-  bottom: 14px;
+  bottom: 16px;
   transform: translateX(-50%);
-  padding: 8px 12px;
+  padding: 10px 14px;
   border-radius: 999px;
-  background: rgba(18, 22, 34, 0.72);
+  background: rgba(11, 16, 28, 0.78);
   color: #ffffff;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   white-space: nowrap;
 }
 
 .cropControls {
   margin-top: 16px;
+}
+
+.cropControlsHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.cropControlsTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #24324a;
+}
+
+.cropControlsHint {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #738094;
+}
+
+.cropZoomBadge {
+  min-width: 54px;
+  padding: 4px 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #ef6c00;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
 }
 
 .cropSliderLabel {
@@ -385,31 +441,69 @@
   color: #24324a;
 }
 
+.cropSliderTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cropResetBtn {
+  padding: 4px 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #1565c0;
+  font-size: 12px;
+  font-weight: 700;
+  transition: opacity 0.2s, color 0.2s;
+}
+
+.cropResetBtn:hover:not(:disabled) {
+  color: #0d47a1;
+}
+
+.cropResetBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .cropSlider {
   width: 100%;
+  height: 8px;
   accent-color: #ef6c00;
+}
+
+.cropSliderScale {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #7f8a99;
 }
 
 .cropActions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: stretch;
   gap: 12px;
-  margin-top: 18px;
+  margin-top: 16px;
 }
 
 .cropGhostBtn,
 .cropSaveBtn {
-  min-width: 132px;
-  padding: 14px 18px;
+  flex: 1;
+  min-width: 0;
+  padding: 15px 18px;
   border-radius: 18px;
   font-size: 14px;
-  font-weight: 600;
-  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+  font-weight: 700;
+  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s, background 0.2s;
 }
 
 .cropGhostBtn {
-  border: 1px solid rgba(25, 118, 210, 0.16);
-  background: rgba(227, 242, 253, 0.72);
+  border: 1px solid rgba(25, 118, 210, 0.14);
+  background: linear-gradient(180deg, rgba(238, 246, 255, 0.96), rgba(223, 239, 255, 0.88));
   color: #1565c0;
 }
 
@@ -417,7 +511,7 @@
   border: none;
   background: linear-gradient(135deg, #ef5350, #fb8c00 55%, #ffca28);
   color: #ffffff;
-  box-shadow: 0 12px 24px rgba(239, 83, 80, 0.16);
+  box-shadow: 0 16px 30px rgba(239, 83, 80, 0.2);
 }
 
 .cropGhostBtn:hover,
@@ -754,6 +848,10 @@
     border-radius: 24px;
   }
 
+  .cropModalHeader {
+    gap: 12px;
+  }
+
   .cropModalTitle {
     font-size: 22px;
   }
@@ -763,16 +861,15 @@
     min-height: 280px;
   }
 
-  .cropGuide {
-    inset: 14px;
-    border-radius: 22px;
-  }
-
   .cropGuideLabel {
     bottom: 10px;
     max-width: calc(100% - 20px);
     text-align: center;
     white-space: normal;
+  }
+
+  .cropControlsHeader {
+    align-items: center;
   }
 
   .cropActions {

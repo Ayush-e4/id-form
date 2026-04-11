@@ -763,7 +763,14 @@ export default function SubmissionsView() {
       {previewImage && (
         <div className={styles.lightbox} onClick={() => setPreviewImage(null)}>
           <div className={styles.lightboxContent}>
-            <Image src={previewImage} alt="Enlarged user photo" fill className={styles.lightboxImg} />
+            <Image
+              src={previewImage}
+              alt="Enlarged user photo"
+              fill
+              unoptimized
+              sizes="(max-width: 768px) 90vw, 600px"
+              className={styles.lightboxImg}
+            />
           </div>
           <button className={styles.lightboxClose} aria-label="Close image preview">×</button>
         </div>

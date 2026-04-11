@@ -19,7 +19,6 @@ export default function PhotoCropModal({ file, isOpen, onCancel, onConfirm }: Ph
   const [initialArea, setInitialArea] = useState<CropArea | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [helperText, setHelperText] = useState("Adjust the photo so the face fits well in the frame.");
   const [sessionKey, setSessionKey] = useState(0);
 
   const imageUrl = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
@@ -41,7 +40,6 @@ export default function PhotoCropModal({ file, isOpen, onCancel, onConfirm }: Ph
     setZoom(1);
     setCroppedAreaPixels(null);
     setInitialArea(null);
-    setHelperText("Adjust the photo so the face fits well in the frame.");
     setIsAnalyzing(true);
 
     detectSuggestedCrop(file)
@@ -49,7 +47,6 @@ export default function PhotoCropModal({ file, isOpen, onCancel, onConfirm }: Ph
         if (!isActive) return;
 
         setInitialArea(suggestion.initialArea);
-        setHelperText(suggestion.message);
         setSessionKey((current) => current + 1);
       })
       .finally(() => {
@@ -85,10 +82,16 @@ export default function PhotoCropModal({ file, isOpen, onCancel, onConfirm }: Ph
     <div className={styles.cropModalBackdrop} onClick={() => !isSaving && onCancel()}>
       <div className={styles.cropModalCard} onClick={(event) => event.stopPropagation()}>
         <div className={styles.cropModalHeader}>
-          <div>
-            <h2 className={styles.cropModalTitle}>Adjust Photo</h2>
-            <p className={styles.cropModalText}>{helperText}</p>
-          </div>
+          <h2 className={styles.cropModalTitle}>Adjust Photo</h2>
+          <button
+            type="button"
+            className={styles.cropCloseBtn}
+            onClick={onCancel}
+            disabled={isSaving}
+            aria-label="Close photo editor"
+          >
+            ×
+          </button>
         </div>
 
         <div className={styles.cropFrameWrap}>
@@ -107,22 +110,39 @@ export default function PhotoCropModal({ file, isOpen, onCancel, onConfirm }: Ph
             aspect={PHOTO_CROP_ASPECT}
             minZoom={1}
             maxZoom={3}
-            objectFit="contain"
+            objectFit="cover"
             showGrid={false}
             cropShape="rect"
+            classes={{ cropAreaClassName: styles.cropAreaFrame }}
             initialCroppedAreaPercentages={initialArea ?? undefined}
             onCropChange={setCrop}
             onZoomChange={setZoom}
             onCropComplete={(_: Area, pixels: Area) => setCroppedAreaPixels(pixels)}
           />
-          <div className={styles.cropGuide}>
-            <span className={styles.cropGuideLabel}>Keep face centered and shoulders visible</span>
-          </div>
+          <div className={styles.cropGuideLabel}>Keep face centered and shoulders visible</div>
         </div>
 
         <div className={styles.cropControls}>
+          <div className={styles.cropControlsHeader}>
+            <div>
+              <div className={styles.cropControlsTitle}>Zoom</div>
+              <div className={styles.cropControlsHint}>Fill the frame naturally.</div>
+            </div>
+            <div className={styles.cropZoomBadge}>{Math.round(zoom * 100)}%</div>
+          </div>
+
           <label className={styles.cropSliderLabel}>
-            <span>Zoom</span>
+            <div className={styles.cropSliderTopRow}>
+              <span>Zoom</span>
+              <button
+                type="button"
+                className={styles.cropResetBtn}
+                onClick={() => setZoom(1)}
+                disabled={isSaving}
+              >
+                Reset
+              </button>
+            </div>
             <input
               className={styles.cropSlider}
               type="range"
@@ -132,6 +152,10 @@ export default function PhotoCropModal({ file, isOpen, onCancel, onConfirm }: Ph
               value={zoom}
               onChange={(event) => setZoom(Number(event.target.value))}
             />
+            <div className={styles.cropSliderScale}>
+              <span>Natural</span>
+              <span>Closer</span>
+            </div>
           </label>
         </div>
 

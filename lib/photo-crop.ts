@@ -18,6 +18,13 @@ const MANUAL_CROP_MESSAGE = "Adjust the photo so the face and shoulders fit nice
 const FACE_HEIGHT_MULTIPLIER = 2.45;
 const FACE_WIDTH_MULTIPLIER = 1.95;
 const FACE_TOP_OFFSET_MULTIPLIER = 0.28;
+const OUTPUT_MIME_TYPE = "image/jpeg";
+const PREFERRED_MAX_OUTPUT_BYTES = 1024 * 1024;
+const HARD_MAX_OUTPUT_BYTES = 2 * 1024 * 1024;
+const MAX_EXPORT_DIMENSION = 2200;
+const INITIAL_EXPORT_QUALITY = 0.94;
+const MIN_EXPORT_QUALITY = 0.8;
+const QUALITY_STEP = 0.06;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
@@ -72,17 +79,91 @@ function getLargestFace(faces: Array<{ boundingBox?: { x?: number; y?: number; w
     .sort((left, right) => (right.width * right.height) - (left.width * left.height))[0];
 }
 
-function getSafeCanvasMimeType(file: File) {
-  if (file.type === "image/png" || file.type === "image/webp") {
-    return file.type;
-  }
-
-  return "image/jpeg";
-}
-
 function replaceFileExtension(fileName: string, extension: string) {
   const baseName = fileName.replace(/\.[^.]+$/, "");
   return `${baseName}.${extension}`;
+}
+
+function getScaledSize(width: number, height: number, maxDimension: number) {
+  const longestSide = Math.max(width, height);
+  if (longestSide <= maxDimension) {
+    return { width, height };
+  }
+
+  const scale = maxDimension / longestSide;
+  return {
+    width: Math.max(1, Math.round(width * scale)),
+    height: Math.max(1, Math.round(height * scale)),
+  };
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement, mimeType: string, quality: number) {
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((nextBlob) => {
+      if (nextBlob) {
+        resolve(nextBlob);
+        return;
+      }
+
+      reject(new Error("Failed to export the cropped photo."));
+    }, mimeType, quality);
+  });
+}
+
+function drawScaledCanvas(source: CanvasImageSource, width: number, height: number) {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("Failed to prepare image crop.");
+  }
+
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = "high";
+  context.drawImage(source, 0, 0, width, height);
+
+  return canvas;
+}
+
+async function exportCroppedPhoto(canvas: HTMLCanvasElement) {
+  let workingCanvas = canvas;
+
+  for (;;) {
+    let candidateBlob: Blob | null = null;
+
+    for (let quality = INITIAL_EXPORT_QUALITY; quality >= MIN_EXPORT_QUALITY; quality -= QUALITY_STEP) {
+      const blob = await canvasToBlob(workingCanvas, OUTPUT_MIME_TYPE, quality);
+
+      if (!candidateBlob || blob.size < candidateBlob.size) {
+        candidateBlob = blob;
+      }
+
+      if (blob.size <= PREFERRED_MAX_OUTPUT_BYTES) {
+        return blob;
+      }
+    }
+
+    if (candidateBlob && candidateBlob.size <= HARD_MAX_OUTPUT_BYTES) {
+      return candidateBlob;
+    }
+
+    const shrinkRatio = candidateBlob
+      ? Math.sqrt(HARD_MAX_OUTPUT_BYTES / candidateBlob.size) * 0.96
+      : 0.9;
+    const nextWidth = Math.max(1, Math.floor(workingCanvas.width * shrinkRatio));
+    const nextHeight = Math.max(1, Math.floor(workingCanvas.height * shrinkRatio));
+
+    if (nextWidth === workingCanvas.width && nextHeight === workingCanvas.height) {
+      if (candidateBlob) {
+        return candidateBlob;
+      }
+      throw new Error("Failed to export the cropped photo.");
+    }
+
+    workingCanvas = drawScaledCanvas(workingCanvas, nextWidth, nextHeight);
+  }
 }
 
 function loadImage(src: string) {
@@ -175,10 +256,11 @@ export async function detectSuggestedCrop(file: File): Promise<CropSuggestion> {
 export async function createCroppedImageFile(imageSrc: string, cropArea: CropArea, sourceFile: File) {
   const image = await loadImage(imageSrc);
   const roundedCrop = roundArea(cropArea);
+  const outputSize = getScaledSize(roundedCrop.width, roundedCrop.height, MAX_EXPORT_DIMENSION);
   const canvas = document.createElement("canvas");
 
-  canvas.width = roundedCrop.width;
-  canvas.height = roundedCrop.height;
+  canvas.width = outputSize.width;
+  canvas.height = outputSize.height;
 
   const context = canvas.getContext("2d");
   if (!context) {
@@ -195,26 +277,14 @@ export async function createCroppedImageFile(imageSrc: string, cropArea: CropAre
     roundedCrop.height,
     0,
     0,
-    roundedCrop.width,
-    roundedCrop.height
+    outputSize.width,
+    outputSize.height
   );
 
-  const mimeType = getSafeCanvasMimeType(sourceFile);
-  const extension = mimeType === "image/png" ? "png" : mimeType === "image/webp" ? "webp" : "jpg";
+  const blob = await exportCroppedPhoto(canvas);
 
-  const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((nextBlob) => {
-      if (nextBlob) {
-        resolve(nextBlob);
-        return;
-      }
-
-      reject(new Error("Failed to export the cropped photo."));
-    }, mimeType, mimeType === "image/png" ? undefined : 0.92);
-  });
-
-  return new File([blob], replaceFileExtension(sourceFile.name, extension), {
-    type: mimeType,
+  return new File([blob], replaceFileExtension(sourceFile.name, "jpg"), {
+    type: OUTPUT_MIME_TYPE,
     lastModified: Date.now(),
   });
 }
