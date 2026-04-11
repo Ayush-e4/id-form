@@ -1,7 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
-import imageCompression from "browser-image-compression";
 import styles from "@/app/page.module.css";
 import {
   BLOOD_GROUP_OPTIONS,
@@ -11,6 +11,9 @@ import {
 } from "@/lib/schools";
 
 type Step = "form" | "uploading" | "success";
+const PhotoCropModal = dynamic(() => import("@/components/forms/PhotoCropModal"), {
+  ssr: false,
+});
 
 const MAX_TEXT_LENGTH = 50;
 const MAX_ADDRESS_LENGTH = 200;
@@ -58,6 +61,7 @@ export default function SchoolRegistrationForm({ school }: { school: SchoolConfi
   const [formData, setFormData] = useState<FormDataState>(INITIAL_FORM_DATA);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [cropSourceFile, setCropSourceFile] = useState<File | null>(null);
   const [showPhotoActions, setShowPhotoActions] = useState(false);
   const [step, setStep] = useState<Step>("form");
   const [errMsg, setErrMsg] = useState("");
@@ -113,18 +117,24 @@ export default function SchoolRegistrationForm({ school }: { school: SchoolConfi
 
   async function onPhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
 
-    replacePhotoPreview(file);
+    setErrMsg("");
+    setCropSourceFile(file);
+  }
 
+  async function handleCropConfirm(croppedFile: File) {
     try {
-      const compressedFile = await imageCompression(file, {
+      const { default: imageCompression } = await import("browser-image-compression");
+      const compressedFile = await imageCompression(croppedFile, {
         maxSizeMB: 2,
         maxWidthOrHeight: 1920,
         useWebWorker: true,
       });
       setPhotoFile(compressedFile);
       replacePhotoPreview(compressedFile);
+      setCropSourceFile(null);
       setShowPhotoActions(false);
       setErrMsg("");
     } catch (err) {
@@ -328,6 +338,13 @@ export default function SchoolRegistrationForm({ school }: { school: SchoolConfi
       </header>
 
       <div className={`${styles.body} ${styles.schoolBody}`}>
+        <PhotoCropModal
+          file={cropSourceFile}
+          isOpen={Boolean(cropSourceFile)}
+          onCancel={() => setCropSourceFile(null)}
+          onConfirm={handleCropConfirm}
+        />
+
         <div className={styles.photoPickerWrap}>
           <input ref={fileRef} type="file" accept="image/*" onChange={onPhotoChange} style={{ display: "none" }} />
           <input
@@ -353,6 +370,9 @@ export default function SchoolRegistrationForm({ school }: { school: SchoolConfi
           <p className={styles.photoPickerHint}>
             Tap the profile icon to choose a photo
           </p>
+          <p className={styles.photoHelpText}>
+            Use a chest-up photo. We will auto-center the face when supported, and you can adjust it before upload.
+          </p>
           {showPhotoActions && (
             <div className={styles.photoActionSheet}>
               <button className={styles.photoActionChip} type="button" onClick={() => fileRef.current?.click()}>
@@ -367,7 +387,7 @@ export default function SchoolRegistrationForm({ school }: { school: SchoolConfi
 
         <div className={styles.schoolGrid}>{school.fields.map(renderField)}</div>
 
-        {errMsg && <p className={styles.error}>{errMsg}</p>}
+        {errMsg && <p className={styles.error} aria-live="polite">{errMsg}</p>}
 
         <button className={styles.submitBtn} onClick={handleSubmit} disabled={step === "uploading"}>
           {step === "uploading" ? (

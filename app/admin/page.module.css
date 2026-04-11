@@ -211,6 +211,177 @@
 
 .filterSelect {
   width: 220px;
+  background: #171923;
+  color: var(--text);
+}
+
+.filterSelect option {
+  background: #171923;
+  color: var(--text);
+}
+
+.progressCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.progressMeta {
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.progressTrack {
+  flex: 1;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #6c7cff, #8ea0ff);
+  transition: width 0.2s ease;
+}
+
+.progressPercent {
+  width: 52px;
+  text-align: right;
+  color: var(--text);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.paginationBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.paginationControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pageBtn {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+}
+
+.pageBtn:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+}
+
+.pageBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pageLabel {
+  color: var(--text-2);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pageNumberStrip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pageNumberWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pageNumberBtn {
+  min-width: 38px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-2);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s;
+}
+
+.pageNumberBtn:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.pageNumberBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pageNumberActive {
+  background: rgba(108, 124, 255, 0.16);
+  border-color: rgba(108, 124, 255, 0.4);
+  color: #d8deff;
+}
+
+.pageGap {
+  color: var(--text-3);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.noticeInfo {
+  background: rgba(108, 124, 255, 0.08);
+  color: #d8deff;
+  border-color: rgba(108, 124, 255, 0.24);
+}
+
+.noticeError {
+  background: rgba(255, 107, 107, 0.08);
+  color: #ffb0b0;
+  border-color: rgba(255, 107, 107, 0.24);
+}
+
+.noticeClose {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 20px;
+  line-height: 1;
 }
 
 /* Table */
@@ -498,6 +669,18 @@
   .filterSelect {
     width: 100%;
   }
+  .progressCard {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .progressMeta,
+  .progressPercent {
+    width: 100%;
+    text-align: left;
+  }
+  .paginationBar {
+    align-items: flex-start;
+  }
   .bulkDeleteBtn {
     margin-left: 0;
     width: 100%;
@@ -566,6 +749,67 @@
   cursor: pointer;
   font-weight: 200;
   line-height: 1;
+}
+
+.dialogBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(6, 8, 12, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.dialog {
+  width: min(100%, 460px);
+  padding: 22px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: #13161f;
+  box-shadow: 0 18px 56px rgba(0, 0, 0, 0.4);
+}
+
+.dialogTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dialogText {
+  margin-top: 10px;
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.dialogDangerBtn {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 107, 107, 0.35);
+  background: rgba(255, 107, 107, 0.14);
+  color: #ffb0b0;
+}
+
+.dialogDangerBtn:hover:not(:disabled) {
+  background: rgba(255, 107, 107, 0.2);
+}
+
+.dialogDangerBtn:disabled,
+.noticeClose:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .dlBtn:disabled {

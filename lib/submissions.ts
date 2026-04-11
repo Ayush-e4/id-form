@@ -4,6 +4,23 @@ import { Submission } from "./types";
 type SubmissionRow = Record<string, unknown>;
 export class SubmissionNotFoundError extends Error {}
 const MAX_INSERT_RETRIES = 10;
+const DEFAULT_PAGE_SIZE = 50;
+const MAX_PAGE_SIZE = 100;
+
+export interface SubmissionListOptions {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  routeSlug?: string;
+  all?: boolean;
+}
+
+export interface SubmissionListResult {
+  items: Submission[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
 
 function asOptionalString(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
@@ -82,6 +99,36 @@ function normalizeSubmission(row: SubmissionRow): Submission {
   };
 }
 
+function filterSubmissions(entries: Submission[], options: SubmissionListOptions) {
+  const routeSlug = options.routeSlug?.trim();
+  const search = options.search?.trim().toLowerCase();
+
+  let filtered = entries;
+
+  if (routeSlug && routeSlug !== "all") {
+    filtered = filtered.filter(
+      (entry) => entry.schoolSlug === routeSlug || entry.plantSlug === routeSlug
+    );
+  }
+
+  if (search) {
+    filtered = filtered.filter((entry) => {
+      return [
+        entry.name,
+        entry.plantName,
+        entry.plantSlug,
+        entry.schoolName,
+        entry.schoolSlug,
+        entry.phone,
+        entry.admissionNo,
+        entry.class,
+      ].some((value) => value?.toLowerCase().includes(search));
+    });
+  }
+
+  return filtered;
+}
+
 export async function readSubmissions(): Promise<Submission[]> {
   const { data, error } = await supabase
     .from('submissions')
@@ -93,6 +140,24 @@ export async function readSubmissions(): Promise<Submission[]> {
     throw error;
   }
   return (data || []).map((row) => normalizeSubmission(row as SubmissionRow));
+}
+
+export async function readSubmissionsPage(options: SubmissionListOptions = {}): Promise<SubmissionListResult> {
+  const pageSize = options.all
+    ? MAX_PAGE_SIZE * 50
+    : Math.min(Math.max(options.pageSize ?? DEFAULT_PAGE_SIZE, 1), MAX_PAGE_SIZE);
+  const page = options.all ? 1 : Math.max(options.page ?? 1, 1);
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize;
+  const entries = await readSubmissions();
+  const filtered = filterSubmissions(entries, options);
+
+  return {
+    items: options.all ? filtered : filtered.slice(from, to),
+    total: filtered.length,
+    page,
+    pageSize,
+  };
 }
 
 export async function appendSubmission(entry: Submission): Promise<void> {

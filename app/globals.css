@@ -25,6 +25,10 @@
   --radius-xl: 28px;
 }
 
+html {
+  color-scheme: dark;
+}
+
 html, body {
   height: 100%;
   background: var(--bg);

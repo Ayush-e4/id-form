@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import ExcelJS from "exceljs";
-import JSZip from "jszip";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import styles from "@/app/admin/page.module.css";
 import { plantConfigs } from "@/lib/plants";
@@ -10,6 +8,21 @@ import { schoolConfigs } from "@/lib/schools";
 import { Submission } from "@/lib/types";
 
 const REPORT_TIME_ZONE = "Asia/Kolkata";
+const PAGE_SIZE_OPTIONS = [50, 100];
+
+interface SubmissionResponse {
+  items: Submission[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+interface ConfirmState {
+  title: string;
+  message: string;
+  actionLabel: string;
+  onConfirm: () => Promise<void>;
+}
 
 function getCalendarDate(value: string) {
   return new Intl.DateTimeFormat("en-CA", {
@@ -20,6 +33,37 @@ function getCalendarDate(value: string) {
   }).format(new Date(value));
 }
 
+function buildPhotoFilename(entry: Submission) {
+  const extMatch = entry.photoUrl?.match(/\.([a-zA-Z0-9]+)(?:\?.*)?$/);
+  let ext = extMatch ? extMatch[1] : "jpg";
+  if (ext.length > 4) ext = "jpg";
+
+  const baseName = (entry.phone || entry.admissionNo || entry.name || entry.id)
+    .replace(/[^a-zA-Z0-9-_]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 60) || entry.id;
+
+  return `${baseName}-${entry.id.slice(-6)}.${ext}`;
+}
+
+function getVisiblePageNumbers(currentPage: number, totalPages: number) {
+  const pages = new Set<number>([1, totalPages, currentPage, currentPage - 1, currentPage + 1]);
+
+  if (currentPage <= 2) {
+    pages.add(2);
+    pages.add(3);
+  }
+
+  if (currentPage >= totalPages - 1) {
+    pages.add(totalPages - 1);
+    pages.add(totalPages - 2);
+  }
+
+  return Array.from(pages)
+    .filter((page) => page >= 1 && page <= totalPages)
+    .sort((left, right) => left - right);
+}
+
 export default function SubmissionsView() {
   const [entries, setEntries] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,17 +72,39 @@ export default function SubmissionsView() {
   const [schoolFilter, setSchoolFilter] = useState("all");
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [downloadingZip, setDownloadingZip] = useState(false);
+  const [zipProgress, setZipProgress] = useState(0);
+  const [zipStatus, setZipStatus] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [deletingIds, setDeletingIds] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+  const [totalCount, setTotalCount] = useState(0);
+  const [notice, setNotice] = useState<{ tone: "info" | "error"; message: string } | null>(null);
+  const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
   const selectAllRef = useRef<HTMLInputElement>(null);
+  const deferredSearch = useDeferredValue(search.trim());
 
   async function load() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/submissions", { cache: "no-store" });
+      const params = new URLSearchParams({
+        page: page.toString(),
+        pageSize: pageSize.toString(),
+        route: schoolFilter,
+      });
+
+      if (deferredSearch) {
+        params.set("search", deferredSearch);
+      }
+
+      const res = await fetch(`/api/submissions?${params.toString()}`, { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to load");
-      setEntries(await res.json());
+
+      const data: SubmissionResponse = await res.json();
+      setEntries(data.items);
+      setTotalCount(data.total);
       setSelectedIds([]);
     } catch {
       setError("Could not load submissions.");
@@ -49,7 +115,7 @@ export default function SubmissionsView() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [page, pageSize, schoolFilter, deferredSearch]);
 
   const schoolOptions = useMemo(() => {
     const bySlug = new Map<string, string>([
@@ -69,28 +135,7 @@ export default function SubmissionsView() {
     return Array.from(bySlug.entries()).map(([slug, name]) => ({ slug, name }));
   }, [entries]);
 
-  const filtered = useMemo(() => {
-    const routeScopedEntries =
-      schoolFilter === "all"
-        ? entries
-        : entries.filter((entry) => entry.schoolSlug === schoolFilter || entry.plantSlug === schoolFilter);
-
-    if (!search.trim()) return routeScopedEntries;
-
-    const q = search.toLowerCase();
-    return routeScopedEntries.filter(
-      (e) =>
-        e.name.toLowerCase().includes(q) ||
-        (e.plantName && e.plantName.toLowerCase().includes(q)) ||
-        (e.plantSlug && e.plantSlug.toLowerCase().includes(q)) ||
-        (e.schoolName && e.schoolName.toLowerCase().includes(q)) ||
-        (e.schoolSlug && e.schoolSlug.toLowerCase().includes(q)) ||
-        (e.phone && e.phone.includes(q)) ||
-        (e.admissionNo && e.admissionNo.includes(q)) ||
-        (e.class && e.class.toLowerCase().includes(q))
-    );
-  }, [entries, schoolFilter, search]);
-
+  const filtered = entries;
   const filteredIds = useMemo(() => filtered.map((entry) => entry.id), [filtered]);
   const visibleSelectedIds = useMemo(
     () => selectedIds.filter((id) => filteredIds.includes(id)),
@@ -105,8 +150,14 @@ export default function SubmissionsView() {
     }
   }, [someFilteredSelected]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [schoolFilter, deferredSearch, pageSize]);
+
   function toggleSelection(id: string) {
-    setSelectedIds((current) => (current.includes(id) ? current.filter((entryId) => entryId !== id) : [...current, id]));
+    setSelectedIds((current) =>
+      current.includes(id) ? current.filter((entryId) => entryId !== id) : [...current, id]
+    );
   }
 
   function toggleSelectAll() {
@@ -117,6 +168,27 @@ export default function SubmissionsView() {
 
       return Array.from(new Set([...current, ...filteredIds]));
     });
+  }
+
+  function showNotice(tone: "info" | "error", message: string) {
+    setNotice({ tone, message });
+  }
+
+  function closeConfirm() {
+    if (confirmLoading) return;
+    setConfirmState(null);
+  }
+
+  async function runConfirmedAction() {
+    if (!confirmState) return;
+
+    setConfirmLoading(true);
+    try {
+      await confirmState.onConfirm();
+      setConfirmState(null);
+    } finally {
+      setConfirmLoading(false);
+    }
   }
 
   async function deleteEntries(ids: string[]) {
@@ -134,35 +206,66 @@ export default function SubmissionsView() {
     }
   }
 
+  async function fetchAllFilteredEntries() {
+    const params = new URLSearchParams({
+      mode: "all",
+      route: schoolFilter,
+      pageSize: pageSize.toString(),
+    });
+
+    if (deferredSearch) {
+      params.set("search", deferredSearch);
+    }
+
+    const response = await fetch(`/api/submissions?${params.toString()}`, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error("Failed to load export data.");
+    }
+
+    const data: SubmissionResponse = await response.json();
+    return data.items;
+  }
+
   async function downloadPhotosZip() {
     setDownloadingZip(true);
+    setZipProgress(0);
+    setZipStatus("Preparing photo list...");
+
     try {
+      const { default: JSZip } = await import("jszip");
       const zip = new JSZip();
-      const photoEntries = filtered.filter((e) => e.photoUrl);
+      const exportEntries = await fetchAllFilteredEntries();
+      const photoEntries = exportEntries.filter((entry) => entry.photoUrl);
 
-      for (const e of photoEntries) {
+      if (photoEntries.length === 0) {
+        showNotice("info", "No photos available for the current filter.");
+        return;
+      }
+
+      for (let index = 0; index < photoEntries.length; index += 1) {
+        const entry = photoEntries[index];
+        setZipStatus(`Downloading photo ${index + 1} of ${photoEntries.length}...`);
+
         try {
-          const res = await fetch(e.photoUrl!);
-          if (!res.ok) throw new Error(`Failed to fetch ${e.photoUrl}`);
-          const blob = await res.blob();
-          const extMatch = e.photoUrl!.match(/\.([a-zA-Z0-9]+)(?:\?.*)?$/);
-          let ext = extMatch ? extMatch[1] : "jpg";
-          if (ext.length > 4) ext = "jpg";
-          const baseName = (e.phone || e.admissionNo || e.name || e.id)
-            .replace(/[^a-zA-Z0-9-_]+/g, "_")
-            .replace(/^_+|_+$/g, "")
-            .slice(0, 60) || e.id;
+          const res = await fetch(entry.photoUrl!);
+          if (!res.ok) throw new Error(`Failed to fetch ${entry.photoUrl}`);
 
-          zip.file(`${baseName}-${e.id.slice(-6)}.${ext}`, blob);
+          const blob = await res.blob();
+          zip.file(buildPhotoFilename(entry), blob);
         } catch (err) {
-          console.error(`Failed to fetch photo for ${e.id}`, err);
+          console.error(`Failed to fetch photo for ${entry.id}`, err);
+        } finally {
+          setZipProgress(Math.round(((index + 1) / photoEntries.length) * 100));
         }
       }
+
+      setZipStatus("Compressing ZIP...");
 
       const content = await zip.generateAsync({ type: "blob" });
       const blobUrl = window.URL.createObjectURL(content);
       const a = document.createElement("a");
       const suffix = schoolFilter === "all" ? "all" : schoolFilter;
+
       a.href = blobUrl;
       a.download = `id_photos_${suffix}_${new Date().toISOString().split("T")[0]}.zip`;
       document.body.appendChild(a);
@@ -171,108 +274,133 @@ export default function SubmissionsView() {
       window.URL.revokeObjectURL(blobUrl);
     } catch (err) {
       console.error("Zip generation failed", err);
-      alert("Failed to create ZIP file.");
+      showNotice("error", "Failed to create ZIP file.");
     } finally {
       setDownloadingZip(false);
+      setZipProgress(0);
+      setZipStatus("");
     }
   }
 
-  async function handleDelete(id: string, name: string) {
-    if (!confirm(`Are you sure you want to delete ${name}'s entry? This will also remove their photo.`)) return;
-
-    setDeletingIds((current) => [...current, id]);
-    try {
-      await deleteEntries([id]);
-      setEntries((current) => current.filter((entry) => entry.id !== id));
-      setSelectedIds((current) => current.filter((entryId) => entryId !== id));
-    } catch (err) {
-      console.error(err);
-      alert("Failed to delete entry.");
-    } finally {
-      setDeletingIds((current) => current.filter((entryId) => entryId !== id));
-    }
+  function handleDelete(id: string, name: string) {
+    setConfirmState({
+      title: "Delete Entry",
+      message: `Delete ${name}'s entry? This will also remove the photo.`,
+      actionLabel: "Delete Entry",
+      onConfirm: async () => {
+        setDeletingIds((current) => [...current, id]);
+        try {
+          await deleteEntries([id]);
+          setEntries((current) => current.filter((entry) => entry.id !== id));
+          setSelectedIds((current) => current.filter((entryId) => entryId !== id));
+          setTotalCount((current) => Math.max(0, current - 1));
+          showNotice("info", `${name}'s entry was deleted.`);
+        } catch (err) {
+          console.error(err);
+          showNotice("error", "Failed to delete entry.");
+        } finally {
+          setDeletingIds((current) => current.filter((entryId) => entryId !== id));
+        }
+      },
+    });
   }
 
-  async function handleBulkDelete() {
+  function handleBulkDelete() {
     if (visibleSelectedIds.length === 0) return;
-    if (!confirm(`Delete ${visibleSelectedIds.length} selected entr${visibleSelectedIds.length === 1 ? "y" : "ies"}? This will also remove their photos.`)) {
-      return;
-    }
 
-    setDeletingIds(visibleSelectedIds);
+    const idsToDelete = [...visibleSelectedIds];
+    setConfirmState({
+      title: "Delete Selected",
+      message: `Delete ${idsToDelete.length} selected entr${idsToDelete.length === 1 ? "y" : "ies"}? This will also remove the photos.`,
+      actionLabel: "Delete Selected",
+      onConfirm: async () => {
+        setDeletingIds(idsToDelete);
 
-    try {
-      await deleteEntries(visibleSelectedIds);
-      setEntries((current) => current.filter((entry) => !visibleSelectedIds.includes(entry.id)));
-      setSelectedIds((current) => current.filter((id) => !visibleSelectedIds.includes(id)));
-    } catch (err) {
-      console.error(err);
-      alert("Failed to delete one or more selected entries.");
-    } finally {
-      setDeletingIds([]);
-    }
+        try {
+          await deleteEntries(idsToDelete);
+          setEntries((current) => current.filter((entry) => !idsToDelete.includes(entry.id)));
+          setSelectedIds((current) => current.filter((id) => !idsToDelete.includes(id)));
+          setTotalCount((current) => Math.max(0, current - idsToDelete.length));
+          showNotice("info", `${idsToDelete.length} entr${idsToDelete.length === 1 ? "y was" : "ies were"} deleted.`);
+        } catch (err) {
+          console.error(err);
+          showNotice("error", "Failed to delete one or more selected entries.");
+        } finally {
+          setDeletingIds([]);
+        }
+      },
+    });
   }
 
-  function downloadExcel() {
-    const rows = filtered.map((e) => ({
-      Type: e.type || "plant",
-      Plant: e.plantName || "",
-      "Plant Slug": e.plantSlug || "",
-      School: e.schoolName || "",
-      "School Slug": e.schoolSlug || "",
-      Name: e.name,
-      Class: e.class || "",
-      "Father's Name": e.fathersName || "",
-      "Mother's Name": e.mothersName || "",
-      DOB: e.dob || "",
-      Mobile: e.phone || "",
-      "Roll No": e.rollNo || "",
-      "Admission No": e.admissionNo || "",
-      Height: e.height || "",
-      Weight: e.weight || "",
-      "Blood Group": e.bloodGroup || "",
-      Address: e.address || "",
-      "House Name": e.houseName || "",
-      "Photo URL": e.photoUrl ?? "Not uploaded",
-      "Submitted At": new Date(e.submittedAt).toLocaleString("en-IN"),
-    }));
-
-    const suffix = schoolFilter === "all" ? "all" : schoolFilter;
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Submissions");
-
-    if (rows.length > 0) {
-      worksheet.columns = Object.keys(rows[0]).map((key) => ({
-        header: key,
-        key,
-        width: Math.min(Math.max(key.length + 4, 16), 28),
+  async function downloadExcel() {
+    try {
+      const { default: ExcelJS } = await import("exceljs");
+      const exportEntries = await fetchAllFilteredEntries();
+      const rows = exportEntries.map((entry) => ({
+        Type: entry.type || "plant",
+        Plant: entry.plantName || "",
+        "Plant Slug": entry.plantSlug || "",
+        School: entry.schoolName || "",
+        "School Slug": entry.schoolSlug || "",
+        Name: entry.name,
+        Class: entry.class || "",
+        "Father's Name": entry.fathersName || "",
+        "Mother's Name": entry.mothersName || "",
+        DOB: entry.dob || "",
+        Mobile: entry.phone || "",
+        "Roll No": entry.rollNo || "",
+        "Admission No": entry.admissionNo || "",
+        Height: entry.height || "",
+        Weight: entry.weight || "",
+        "Blood Group": entry.bloodGroup || "",
+        Address: entry.address || "",
+        "House Name": entry.houseName || "",
+        "Photo URL": entry.photoUrl ?? "Not uploaded",
+        "Sample Photo Name": entry.photoUrl ? buildPhotoFilename(entry) : "",
+        "Submitted At": new Date(entry.submittedAt).toLocaleString("en-IN"),
       }));
-      worksheet.addRows(rows);
-      worksheet.getRow(1).font = { bold: true };
-    }
 
-    workbook.xlsx.writeBuffer().then((buffer) => {
+      const suffix = schoolFilter === "all" ? "all" : schoolFilter;
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Submissions");
+
+      if (rows.length > 0) {
+        worksheet.columns = Object.keys(rows[0]).map((key) => ({
+          header: key,
+          key,
+          width: Math.min(Math.max(key.length + 4, 16), 28),
+        }));
+        worksheet.addRows(rows);
+        worksheet.getRow(1).font = { bold: true };
+      }
+
+      const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
       const blobUrl = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
+
       a.href = blobUrl;
       a.download = `id_submissions_${suffix}.xlsx`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(blobUrl);
-    }).catch((err) => {
+    } catch (err) {
       console.error("Excel generation failed", err);
-      alert("Failed to create Excel file.");
-    });
+      showNotice("error", "Failed to create Excel file.");
+    }
   }
 
-  const withPhoto = filtered.filter((e) => e.photoUrl).length;
+  const withPhoto = filtered.filter((entry) => entry.photoUrl).length;
   const todayKey = getCalendarDate(new Date().toISOString());
-  const today = filtered.filter((e) => getCalendarDate(e.submittedAt) === todayKey).length;
+  const today = filtered.filter((entry) => getCalendarDate(entry.submittedAt) === todayKey).length;
   const missingPhoto = filtered.length - withPhoto;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const pageStart = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
+  const pageEnd = totalCount === 0 ? 0 : pageStart + filtered.length - 1;
+  const visiblePageNumbers = getVisiblePageNumbers(page, totalPages);
 
   return (
     <main className={styles.main}>
@@ -281,8 +409,8 @@ export default function SubmissionsView() {
           <h1 className={styles.pageTitle}>Submissions</h1>
           <p className={styles.pageSub}>
             {schoolFilter === "all"
-              ? `All ID card registration entries (${filtered.length} showing)`
-              : `${filtered.length} entries for ${schoolOptions.find((school) => school.slug === schoolFilter)?.name || schoolFilter}`}
+              ? `${totalCount} total ID card registration entries`
+              : `${totalCount} entries for ${schoolOptions.find((school) => school.slug === schoolFilter)?.name || schoolFilter}`}
           </p>
         </div>
         <div className={styles.actions}>
@@ -290,7 +418,7 @@ export default function SubmissionsView() {
             Refresh
           </button>
           <button className={styles.dlBtn} onClick={downloadPhotosZip} disabled={downloadingZip}>
-            {downloadingZip ? "Zipping..." : "Download Photos"}
+            {downloadingZip ? "Preparing..." : "Download Photos"}
           </button>
           <button className={styles.dlBtn} onClick={downloadExcel}>
             Download Excel
@@ -301,6 +429,10 @@ export default function SubmissionsView() {
       <div className={styles.stats}>
         <div className={styles.stat}>
           <div className={styles.statLabel}>Total entries</div>
+          <div className={styles.statVal}>{totalCount}</div>
+        </div>
+        <div className={styles.stat}>
+          <div className={styles.statLabel}>On this page</div>
           <div className={styles.statVal}>{filtered.length}</div>
         </div>
         <div className={styles.stat}>
@@ -308,17 +440,18 @@ export default function SubmissionsView() {
           <div className={styles.statVal}>{withPhoto}</div>
         </div>
         <div className={styles.stat}>
-          <div className={styles.statLabel}>Today</div>
+          <div className={styles.statLabel}>Today on this page</div>
           <div className={styles.statVal}>{today}</div>
-        </div>
-        <div className={styles.stat}>
-          <div className={styles.statLabel}>Missing photo</div>
-          <div className={styles.statVal}>{missingPhoto}</div>
         </div>
       </div>
 
       <div className={styles.toolbar}>
-        <select className={styles.filterSelect} value={schoolFilter} onChange={(e) => setSchoolFilter(e.target.value)}>
+        <select
+          className={styles.filterSelect}
+          value={schoolFilter}
+          onChange={(e) => setSchoolFilter(e.target.value)}
+          aria-label="Filter submissions by route"
+        >
           <option value="all">All routes</option>
           {schoolOptions.map((school) => (
             <option key={school.slug} value={school.slug}>
@@ -326,14 +459,60 @@ export default function SubmissionsView() {
             </option>
           ))}
         </select>
+        <select
+          className={styles.filterSelect}
+          value={pageSize}
+          onChange={(e) => setPageSize(Number(e.target.value))}
+          aria-label="Rows per page"
+        >
+          {PAGE_SIZE_OPTIONS.map((size) => (
+            <option key={size} value={size}>
+              {size} per page
+            </option>
+          ))}
+        </select>
         <input
           className={styles.search}
           type="text"
-          placeholder="Search by name, school, phone, class, or admission no…"
+          placeholder="Search by name, school, phone, class, or admission no..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          aria-label="Search submissions"
+          autoComplete="off"
         />
       </div>
+
+      {notice && (
+        <div
+          className={`${styles.notice} ${notice.tone === "error" ? styles.noticeError : styles.noticeInfo}`}
+          aria-live="polite"
+        >
+          <span>{notice.message}</span>
+          <button className={styles.noticeClose} onClick={() => setNotice(null)} aria-label="Dismiss notice">
+            ×
+          </button>
+        </div>
+      )}
+
+      {downloadingZip && (
+        <div className={styles.progressCard} aria-live="polite">
+          <div className={styles.progressMeta}>
+            <strong>Download Photos</strong>
+            <span>{zipStatus}</span>
+          </div>
+          <div
+            className={styles.progressTrack}
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={zipProgress}
+            aria-label="Photo ZIP download progress"
+          >
+            <div className={styles.progressFill} style={{ width: `${zipProgress}%` }} />
+          </div>
+          <div className={styles.progressPercent}>{zipProgress}%</div>
+        </div>
+      )}
 
       <div className={styles.bulkActions}>
         <label className={styles.bulkSelect}>
@@ -357,8 +536,50 @@ export default function SubmissionsView() {
         </button>
       </div>
 
+      <div className={styles.paginationBar}>
+        <div className={styles.bulkMeta}>
+          {totalCount === 0 ? "No entries to show" : `Showing ${pageStart}-${pageEnd} of ${totalCount}`}
+        </div>
+        <div className={styles.paginationControls}>
+          <button
+            className={styles.pageBtn}
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+            disabled={page === 1 || loading}
+          >
+            Prev
+          </button>
+          <div className={styles.pageNumberStrip} aria-label="Pagination">
+            {visiblePageNumbers.map((pageNumber, index) => {
+              const previousPage = visiblePageNumbers[index - 1];
+              const showGap = previousPage && pageNumber - previousPage > 1;
+
+              return (
+                <span key={pageNumber} className={styles.pageNumberWrap}>
+                  {showGap && <span className={styles.pageGap}>...</span>}
+                  <button
+                    className={`${styles.pageNumberBtn} ${pageNumber === page ? styles.pageNumberActive : ""}`}
+                    onClick={() => setPage(pageNumber)}
+                    disabled={loading}
+                    aria-current={pageNumber === page ? "page" : undefined}
+                  >
+                    {pageNumber}
+                  </button>
+                </span>
+              );
+            })}
+          </div>
+          <button
+            className={styles.pageBtn}
+            onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+            disabled={page >= totalPages || loading}
+          >
+            Next
+          </button>
+        </div>
+      </div>
+
       {loading ? (
-        <div className={styles.empty}>Loading…</div>
+        <div className={styles.empty}>Loading...</div>
       ) : error ? (
         <div className={styles.empty} style={{ color: "#c0392b" }}>
           {error}
@@ -398,81 +619,81 @@ export default function SubmissionsView() {
                   </td>
                 </tr>
               ) : (
-                filtered.map((e, i) => {
-                  const initials = e.name
+                filtered.map((entry, index) => {
+                  const initials = entry.name
                     .split(" ")
-                    .map((w) => w[0])
+                    .map((word) => word[0])
                     .join("")
                     .slice(0, 2)
                     .toUpperCase();
 
                   return (
-                    <tr key={e.id}>
+                    <tr key={entry.id}>
                       <td className={styles.selectionCell}>
                         <input
                           type="checkbox"
-                          checked={selectedIds.includes(e.id)}
-                          onChange={() => toggleSelection(e.id)}
-                          aria-label={`Select ${e.name}`}
+                          checked={selectedIds.includes(entry.id)}
+                          onChange={() => toggleSelection(entry.id)}
+                          aria-label={`Select ${entry.name}`}
                           className={styles.rowCheckbox}
                           disabled={deletingIds.length > 0}
                         />
                       </td>
-                      <td className={`${styles.rowNum} ${styles.indexCell}`}>{i + 1}</td>
+                      <td className={`${styles.rowNum} ${styles.indexCell}`}>{pageStart + index}</td>
                       <td>
-                        {e.photoUrl ? (
+                        {entry.photoUrl ? (
                           <Image
-                            src={e.photoUrl}
-                            alt={e.name}
+                            src={entry.photoUrl}
+                            alt={entry.name}
                             className={`${styles.avatar} ${styles.clickableAvatar}`}
                             width={36}
                             height={36}
-                            onClick={() => setPreviewImage(e.photoUrl!)}
+                            onClick={() => setPreviewImage(entry.photoUrl!)}
                           />
                         ) : (
                           <div className={styles.initials}>{initials}</div>
                         )}
                       </td>
                       <td>
-                        <span className={styles.typeBadge} data-type={e.type || "plant"}>
-                          {(e.type || "plant").toUpperCase()}
+                        <span className={styles.typeBadge} data-type={entry.type || "plant"}>
+                          {(entry.type || "plant").toUpperCase()}
                         </span>
                       </td>
                       <td className={styles.nameCell}>
-                        <div style={{ fontWeight: 600 }}>{e.name}</div>
-                        {(e.schoolName || e.plantName) && (
-                          <div style={{ fontSize: "11px", opacity: 0.7 }}>{e.schoolName || e.plantName}</div>
+                        <div style={{ fontWeight: 600 }}>{entry.name}</div>
+                        {(entry.schoolName || entry.plantName) && (
+                          <div style={{ fontSize: "11px", opacity: 0.7 }}>{entry.schoolName || entry.plantName}</div>
                         )}
-                        {e.fathersName && <div style={{ fontSize: "11px", opacity: 0.7 }}>S/O: {e.fathersName}</div>}
+                        {entry.fathersName && <div style={{ fontSize: "11px", opacity: 0.7 }}>S/O: {entry.fathersName}</div>}
                       </td>
                       <td className={styles.mono}>
-                        {e.type === "school" ? (
+                        {entry.type === "school" ? (
                           <div>
-                            <div>Class: {e.class}</div>
-                            <div style={{ fontSize: "11px" }}>{e.phone}</div>
+                            <div>Class: {entry.class}</div>
+                            <div style={{ fontSize: "11px" }}>{entry.phone}</div>
                           </div>
                         ) : (
-                          e.phone
+                          entry.phone
                         )}
                       </td>
                       <td>
-                        {e.type === "school" ? (
+                        {entry.type === "school" ? (
                           <div style={{ fontSize: "11px", lineHeight: 1.4 }}>
-                            {e.admissionNo && <div>Adm: {e.admissionNo}</div>}
-                            {e.bloodGroup && <div>Blood: {e.bloodGroup}</div>}
-                            {e.dob && <div>DOB: {e.dob}</div>}
+                            {entry.admissionNo && <div>Adm: {entry.admissionNo}</div>}
+                            {entry.bloodGroup && <div>Blood: {entry.bloodGroup}</div>}
+                            {entry.dob && <div>DOB: {entry.dob}</div>}
                           </div>
                         ) : (
                           "-"
                         )}
                       </td>
                       <td>
-                        <span className={e.photoUrl ? styles.badgeYes : styles.badgeNo}>
-                          {e.photoUrl ? "Uploaded" : "Missing"}
+                        <span className={entry.photoUrl ? styles.badgeYes : styles.badgeNo}>
+                          {entry.photoUrl ? "Uploaded" : "Missing"}
                         </span>
                       </td>
                       <td className={styles.timeCell}>
-                        {new Date(e.submittedAt).toLocaleString("en-IN", {
+                        {new Date(entry.submittedAt).toLocaleString("en-IN", {
                           dateStyle: "medium",
                           timeStyle: "short",
                         })}
@@ -480,9 +701,10 @@ export default function SubmissionsView() {
                       <td>
                         <button
                           className={styles.deleteBtn}
-                          onClick={() => handleDelete(e.id, e.name)}
+                          onClick={() => handleDelete(entry.id, entry.name)}
                           title="Delete Entry"
-                          disabled={deletingIds.includes(e.id)}
+                          aria-label={`Delete ${entry.name}`}
+                          disabled={deletingIds.includes(entry.id)}
                         >
                           🗑️
                         </button>
@@ -496,12 +718,79 @@ export default function SubmissionsView() {
         </div>
       )}
 
+      <div className={styles.paginationBar}>
+        <div className={styles.bulkMeta}>
+          {missingPhoto > 0 ? `${missingPhoto} item(s) on this page are missing photos` : "All visible entries have photos"}
+        </div>
+        <div className={styles.paginationControls}>
+          <button
+            className={styles.pageBtn}
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+            disabled={page === 1 || loading}
+          >
+            Prev
+          </button>
+          <div className={styles.pageNumberStrip} aria-label="Pagination">
+            {visiblePageNumbers.map((pageNumber, index) => {
+              const previousPage = visiblePageNumbers[index - 1];
+              const showGap = previousPage && pageNumber - previousPage > 1;
+
+              return (
+                <span key={pageNumber} className={styles.pageNumberWrap}>
+                  {showGap && <span className={styles.pageGap}>...</span>}
+                  <button
+                    className={`${styles.pageNumberBtn} ${pageNumber === page ? styles.pageNumberActive : ""}`}
+                    onClick={() => setPage(pageNumber)}
+                    disabled={loading}
+                    aria-current={pageNumber === page ? "page" : undefined}
+                  >
+                    {pageNumber}
+                  </button>
+                </span>
+              );
+            })}
+          </div>
+          <button
+            className={styles.pageBtn}
+            onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+            disabled={page >= totalPages || loading}
+          >
+            Next
+          </button>
+        </div>
+      </div>
+
       {previewImage && (
         <div className={styles.lightbox} onClick={() => setPreviewImage(null)}>
           <div className={styles.lightboxContent}>
-            <Image src={previewImage} alt="Enlarged User Photo" fill className={styles.lightboxImg} />
+            <Image src={previewImage} alt="Enlarged user photo" fill className={styles.lightboxImg} />
           </div>
-          <button className={styles.lightboxClose}>×</button>
+          <button className={styles.lightboxClose} aria-label="Close image preview">×</button>
+        </div>
+      )}
+
+      {confirmState && (
+        <div className={styles.dialogBackdrop} onClick={closeConfirm}>
+          <div
+            className={styles.dialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-dialog-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 id="confirm-dialog-title" className={styles.dialogTitle}>
+              {confirmState.title}
+            </h2>
+            <p className={styles.dialogText}>{confirmState.message}</p>
+            <div className={styles.dialogActions}>
+              <button className={styles.pageBtn} onClick={closeConfirm} disabled={confirmLoading}>
+                Cancel
+              </button>
+              <button className={styles.dialogDangerBtn} onClick={runConfirmedAction} disabled={confirmLoading}>
+                {confirmLoading ? "Working..." : confirmState.actionLabel}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </main>

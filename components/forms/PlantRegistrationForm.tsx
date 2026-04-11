@@ -1,18 +1,22 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
-import imageCompression from "browser-image-compression";
 import styles from "@/app/page.module.css";
 import { PlantConfig } from "@/lib/plants";
 
 type Step = "form" | "uploading" | "success";
 const MAX_TEXT_LENGTH = 50;
+const PhotoCropModal = dynamic(() => import("@/components/forms/PhotoCropModal"), {
+  ssr: false,
+});
 
 export default function PlantRegistrationForm({ plant }: { plant: PlantConfig }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [cropSourceFile, setCropSourceFile] = useState<File | null>(null);
   const [step, setStep] = useState<Step>("form");
   const [errMsg, setErrMsg] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -45,18 +49,24 @@ export default function PlantRegistrationForm({ plant }: { plant: PlantConfig })
 
   async function onPhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
 
-    replacePhotoPreview(file);
+    setErrMsg("");
+    setCropSourceFile(file);
+  }
 
+  async function handleCropConfirm(croppedFile: File) {
     try {
-      const compressedFile = await imageCompression(file, {
+      const { default: imageCompression } = await import("browser-image-compression");
+      const compressedFile = await imageCompression(croppedFile, {
         maxSizeMB: 2,
         maxWidthOrHeight: 1920,
         useWebWorker: true,
       });
       setPhotoFile(compressedFile);
       replacePhotoPreview(compressedFile);
+      setCropSourceFile(null);
       setErrMsg("");
     } catch (err) {
       console.error(err);
@@ -170,6 +180,13 @@ export default function PlantRegistrationForm({ plant }: { plant: PlantConfig })
       </header>
 
       <div className={styles.body}>
+        <PhotoCropModal
+          file={cropSourceFile}
+          isOpen={Boolean(cropSourceFile)}
+          onCancel={() => setCropSourceFile(null)}
+          onConfirm={handleCropConfirm}
+        />
+
         <div className={styles.photoZone}>
           <input ref={fileRef} type="file" accept="image/*" onChange={onPhotoChange} style={{ display: "none" }} />
           <input
@@ -183,7 +200,7 @@ export default function PlantRegistrationForm({ plant }: { plant: PlantConfig })
           {photoPreview ? (
             <div style={{ width: "100%", height: "100%", cursor: "pointer" }} onClick={() => fileRef.current?.click()}>
               <img src={photoPreview} alt="Preview" className={styles.photoPreview} />
-              <div className={styles.changeOverlay}>Click to change photo</div>
+              <div className={styles.changeOverlay}>Tap to change photo</div>
             </div>
           ) : (
             <div className={styles.photoDualActions}>
@@ -198,6 +215,10 @@ export default function PlantRegistrationForm({ plant }: { plant: PlantConfig })
             </div>
           )}
         </div>
+
+        <p className={styles.photoHelpText}>
+          Use a chest-up photo. We will auto-center the face when supported, and you can adjust it before upload.
+        </p>
 
         <div className={styles.field}>
           <label className={styles.label}>FULL NAME</label>
@@ -226,7 +247,7 @@ export default function PlantRegistrationForm({ plant }: { plant: PlantConfig })
           />
         </div>
 
-        {errMsg && <p className={styles.error}>{errMsg}</p>}
+        {errMsg && <p className={styles.error} aria-live="polite">{errMsg}</p>}
 
         <button
           className={`${styles.submitBtn} ${step === "uploading" ? styles.submitBtnLoading : ""}`}
