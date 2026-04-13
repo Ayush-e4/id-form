@@ -21,10 +21,9 @@ export default function ShareableRoutes({ routes }: { routes: RouteItem[] }) {
 
   return (
     <section className={styles.panel}>
-      <div className={styles.panelHeader} style={{ flexWrap: "wrap", gap: "10px" }}>
+      <div className={styles.panelHeader} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
         <div>
           <h2 className={styles.panelTitle}>Shareable Routes</h2>
-          <p className={styles.panelMeta}>Quick links the admin can copy and send to plants and schools</p>
         </div>
         <input
           type="text"
