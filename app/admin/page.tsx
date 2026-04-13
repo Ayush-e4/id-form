@@ -5,6 +5,7 @@ import { buildSchoolSummary, formatStorageUsage, getCalendarDate, getPhotoStorag
 import { plantConfigs } from "@/lib/plants";
 import { schoolConfigs } from "@/lib/schools";
 import { readSubmissions } from "@/lib/submissions";
+import ShareableRoutes from "@/components/admin/ShareableRoutes";
 
 export const dynamic = "force-dynamic";
 
@@ -72,30 +73,7 @@ export default async function AdminDashboardPage() {
       </div>
 
       <div className={styles.dashboardGrid}>
-        <section className={styles.panel}>
-          <div className={styles.panelHeader}>
-            <div>
-              <h2 className={styles.panelTitle}>Shareable Routes</h2>
-              <p className={styles.panelMeta}>Quick links the admin can copy and send to plants and schools</p>
-            </div>
-          </div>
-          <div className={styles.routeList}>
-            {shareableRoutes.map((route) => (
-              <div key={route.href} className={styles.routeRow}>
-                <div className={styles.routeTop}>
-                  <div>
-                    <div className={styles.routeLabel}>{route.label}</div>
-                    <div className={styles.routePath}>{route.path}</div>
-                  </div>
-                  <span className={styles.routeType}>{route.type}</span>
-                </div>
-                <a href={route.href} target="_blank" rel="noreferrer" className={styles.routeLink}>
-                  {route.href}
-                </a>
-              </div>
-            ))}
-          </div>
-        </section>
+        <ShareableRoutes routes={shareableRoutes} />
 
         <section className={styles.panel}>
           <div className={styles.panelHeader}>

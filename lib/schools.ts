@@ -156,6 +156,24 @@ export const schoolConfigs: SchoolConfig[] = [
       { key: "phone", required: true, width: "half", placeholder: "Enter 10 digit phone" },
     ],
   },
+  {
+    slug: "ddrp-public-school",
+    name: "DDRP Public School",
+    title: "DDRP Public School ID Form",
+    subtitle: "Student Registration",
+    successTitle: "Submitted!",
+    successMessage: "DDRP Public School details have been saved successfully.",
+    fields: [
+      { key: "name", required: true, width: "half", placeholder: "Required" },
+      { key: "fathersName", width: "half" },
+      { key: "mothersName", width: "half" },
+      { key: "class", width: "half" },
+      { key: "dob", width: "half" },
+      { key: "admissionNo", width: "half" },
+      { key: "address", width: "full" },
+      { key: "phone", required: true, width: "half", placeholder: "Enter 10 digit phone" },
+    ],
+  },
 ];
 
 export function getSchoolConfig(slug: string) {

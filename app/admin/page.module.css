@@ -951,3 +951,21 @@
   gap: 12px;
   margin-bottom: 12px;
 }
+
+.scrollableRouteList {
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 8px; /* For scrollbar breathing room */
+}
+
+.scrollableRouteList::-webkit-scrollbar {
+  width: 6px;
+}
+.scrollableRouteList::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+.scrollableRouteList::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
