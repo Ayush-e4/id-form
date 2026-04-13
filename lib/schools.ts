@@ -174,6 +174,25 @@ export const schoolConfigs: SchoolConfig[] = [
       { key: "phone", required: true, width: "half", placeholder: "Enter 10 digit phone" },
     ],
   },
+  {
+    slug: "children-paradise-school",
+    name: "Children Paradise School",
+    title: "Children Paradise School ID Form",
+    subtitle: "Student Registration",
+    successTitle: "Submitted!",
+    successMessage: "Children Paradise School details have been saved successfully.",
+    fields: [
+      { key: "name", required: true, width: "half", placeholder: "Required" },
+      { key: "fathersName", width: "half" },
+      { key: "mothersName", width: "half" },
+      { key: "class", width: "third" },
+      { key: "rollNo", width: "third" },
+      { key: "admissionNo", width: "third" },
+      { key: "dob", width: "half" },
+      { key: "address", width: "full" },
+      { key: "phone", required: true, width: "half", placeholder: "Enter 10 digit phone" },
+    ],
+  },
 ];
 
 export function getSchoolConfig(slug: string) {
