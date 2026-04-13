@@ -36,7 +36,7 @@ export default async function AdminDashboardPage() {
   ];
 
   return (
-    <main className={styles.main}>
+    <main className={`${styles.main} ${styles.dashboardMain}`}>
       <div className={styles.topbar}>
         <div>
           <h1 className={styles.pageTitle}>Dashboard</h1>

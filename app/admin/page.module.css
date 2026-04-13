@@ -96,11 +96,15 @@
 .main {
   flex: 1;
   height: 100dvh;
+  overflow: auto;
+  padding: 36px 40px 32px;
+  min-width: 0;
+}
+
+.dashboardMain {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  padding: 36px 40px 32px;
-  min-width: 0;
 }
 
 .topbar {
