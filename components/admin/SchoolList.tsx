@@ -23,13 +23,18 @@ export default function SchoolList({ schools }: { schools: SchoolSummary[] }) {
 
   return (
     <>
-      <div className={styles.toolbar}>
+      <div className={styles.topbar}>
+        <div>
+          <h1 className={styles.pageTitle}>Schools</h1>
+          <p className={styles.pageSub}>Configured school routes and their activity.</p>
+        </div>
         <input
           type="text"
           className={styles.search}
           placeholder="Search schools..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          style={{ width: "240px" }}
         />
       </div>
 
@@ -55,13 +60,12 @@ export default function SchoolList({ schools }: { schools: SchoolSummary[] }) {
               filteredSchools.map((school) => (
                 <tr key={school.slug}>
                   <td>
-                    <div className={styles.schoolName}>{school.name}</div>
-                    <div className={styles.schoolSlug}>{school.slug}</div>
+                    <div className={styles.schoolName} style={{ color: "#ffffff", fontSize: "15px" }}>{school.name}</div>
                   </td>
-                  <td className={styles.mono}>{school.configuredFields}</td>
-                  <td className={styles.mono}>{school.entryCount}</td>
-                  <td className={styles.mono}>{school.withPhoto}</td>
-                  <td className={styles.timeCell}>
+                  <td className={styles.mono} style={{ color: "#ffffff", fontSize: "14px" }}>{school.configuredFields}</td>
+                  <td className={styles.mono} style={{ color: "#ffffff", fontSize: "14px" }}>{school.entryCount}</td>
+                  <td className={styles.mono} style={{ color: "#ffffff", fontSize: "14px" }}>{school.withPhoto}</td>
+                  <td className={styles.timeCell} style={{ color: "#ffffff", fontSize: "14px" }}>
                     {school.lastSubmittedAt
                       ? new Date(school.lastSubmittedAt).toLocaleString("en-IN", {
                           dateStyle: "medium",

@@ -11,13 +11,6 @@ export default async function AdminSchoolsPage() {
 
   return (
     <main className={styles.main}>
-      <div className={styles.topbar}>
-        <div>
-          <h1 className={styles.pageTitle}>Schools</h1>
-          <p className={styles.pageSub}>Configured school routes and their activity.</p>
-        </div>
-      </div>
-
       <SchoolList schools={schoolSummary} />
     </main>
   );
