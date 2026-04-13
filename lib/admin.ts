@@ -63,7 +63,7 @@ export function buildSchoolSummary(entries: Submission[]) {
     schoolMap.set(entry.schoolSlug, current);
   }
 
-  return Array.from(schoolMap.values()).sort((a, b) => b.entryCount - a.entryCount || a.name.localeCompare(b.name));
+  return Array.from(schoolMap.values()).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function normalizeFolderPath(parentPath: string, name: string) {

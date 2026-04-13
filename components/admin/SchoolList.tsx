@@ -42,7 +42,8 @@ export default function SchoolList({ schools }: { schools: SchoolSummary[] }) {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th style={{ width: "35%" }}>School Name</th>
+              <th style={{ width: "5%" }}>#</th>
+              <th style={{ width: "30%" }}>School Name</th>
               <th style={{ width: "15%" }}>Fields</th>
               <th style={{ width: "15%" }}>Entries</th>
               <th style={{ width: "15%" }}>Photos</th>
@@ -57,8 +58,9 @@ export default function SchoolList({ schools }: { schools: SchoolSummary[] }) {
                 </td>
               </tr>
             ) : (
-              filteredSchools.map((school) => (
+              filteredSchools.map((school, index) => (
                 <tr key={school.slug}>
+                  <td className={styles.mono} style={{ color: "#ffffff", fontSize: "14px", opacity: 0.7 }}>{index + 1}</td>
                   <td>
                     <div className={styles.schoolName} style={{ color: "#ffffff", fontSize: "15px" }}>{school.name}</div>
                   </td>
