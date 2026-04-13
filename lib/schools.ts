@@ -136,6 +136,26 @@ export const schoolConfigs: SchoolConfig[] = [
       { key: "phone", required: true, width: "half", placeholder: "Enter 10 digit phone" },
     ],
   },
+  {
+    slug: "golden-public-school",
+    name: "Golden Public School",
+    title: "Golden Public School ID Form",
+    subtitle: "Student Registration",
+    successTitle: "Submitted!",
+    successMessage: "Golden Public School details have been saved successfully.",
+    fields: [
+      { key: "name", required: true, width: "half", placeholder: "Required" },
+      { key: "fathersName", width: "half" },
+      { key: "mothersName", width: "half" },
+      { key: "class", width: "half" },
+      { key: "rollNo", width: "half" },
+      { key: "dob", width: "half" },
+      { key: "admissionNo", width: "half" },
+      { key: "bloodGroup", width: "half" },
+      { key: "address", width: "full" },
+      { key: "phone", required: true, width: "half", placeholder: "Enter 10 digit phone" },
+    ],
+  },
 ];
 
 export function getSchoolConfig(slug: string) {
