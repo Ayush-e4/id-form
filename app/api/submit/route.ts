@@ -17,6 +17,7 @@ const SCHOOL_FIELD_KEYS = [
   "fathersName",
   "mothersName",
   "class",
+  "section",
   "dob",
   "address",
   "rollNo",
@@ -178,6 +179,7 @@ export async function POST(req: NextRequest) {
       weight: weight?.toString(),
       bloodGroup,
       houseName: trimString(body.houseName, MAX_HOUSE_LENGTH),
+      section: trimString(body.section, MAX_TEXT_LENGTH),
     };
 
     await appendSubmission(entry);

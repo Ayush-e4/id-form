@@ -23,4 +23,5 @@ export interface Submission {
   weight?: string;
   bloodGroup?: string;
   houseName?: string;
+  section?: string;
 }

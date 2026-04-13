@@ -28,6 +28,7 @@ type FormDataState = Record<SchoolFieldKey, string>;
 const INITIAL_FORM_DATA: FormDataState = {
   name: "",
   class: "",
+  section: "",
   fathersName: "",
   mothersName: "",
   dob: "",
@@ -44,6 +45,7 @@ const INITIAL_FORM_DATA: FormDataState = {
 const FIELD_LABELS: Record<SchoolFieldKey, string> = {
   name: "Student Name",
   class: "Class",
+  section: "Section",
   fathersName: "Father's Name",
   mothersName: "Mother's Name",
   dob: "Date of Birth",

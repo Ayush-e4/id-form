@@ -1,6 +1,7 @@
 export type SchoolFieldKey =
   | "name"
   | "class"
+  | "section"
   | "fathersName"
   | "mothersName"
   | "dob"
@@ -95,6 +96,44 @@ export const schoolConfigs: SchoolConfig[] = [
       { key: "dob", width: "half" },
       { key: "phone", required: true, width: "half", placeholder: "Enter 10 digit phone" },
       { key: "address", width: "full" },
+    ],
+  },
+  {
+    slug: "gokul-public-school",
+    name: "Gokul Public School",
+    title: "Gokul Public School ID Form",
+    subtitle: "Student Registration",
+    successTitle: "Submitted!",
+    successMessage: "Gokul Public School details have been saved successfully.",
+    fields: [
+      { key: "name", required: true, width: "half", placeholder: "Required" },
+      { key: "fathersName", width: "half" },
+      { key: "mothersName", width: "half" },
+      { key: "dob", width: "half" },
+      { key: "class", width: "third" },
+      { key: "section", width: "third" },
+      { key: "rollNo", width: "third" },
+      { key: "admissionNo", width: "half" },
+      { key: "address", width: "full" },
+      { key: "phone", required: true, width: "half", placeholder: "Enter 10 digit phone" },
+    ],
+  },
+  {
+    slug: "st-francis-academy",
+    name: "St. Francis Academy",
+    title: "St. Francis Academy ID Form",
+    subtitle: "Student Registration",
+    successTitle: "Submitted!",
+    successMessage: "St. Francis Academy details have been saved successfully.",
+    fields: [
+      { key: "name", required: true, width: "half", placeholder: "Required" },
+      { key: "fathersName", width: "half" },
+      { key: "mothersName", width: "half" },
+      { key: "class", width: "half" },
+      { key: "dob", width: "half" },
+      { key: "admissionNo", width: "half" },
+      { key: "address", width: "full" },
+      { key: "phone", required: true, width: "half", placeholder: "Enter 10 digit phone" },
     ],
   },
 ];
