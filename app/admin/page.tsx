@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import styles from "./page.module.css";
-import { buildSchoolSummary, formatStorageUsage, getCalendarDate, getPhotoStorageUsage } from "@/lib/admin";
+import {
+  SUPABASE_FREE_TIER_STORAGE_BYTES,
+  buildSchoolSummary,
+  formatStorageQuota,
+  formatStorageUsage,
+  getCalendarDate,
+  getPhotoStorageUsage,
+} from "@/lib/admin";
 import { plantConfigs } from "@/lib/plants";
 import { schoolConfigs } from "@/lib/schools";
 import { readSubmissions } from "@/lib/submissions";
@@ -16,6 +23,10 @@ export default async function AdminDashboardPage() {
   const todayKey = getCalendarDate(new Date().toISOString());
   const todayCount = entries.filter((entry) => getCalendarDate(entry.submittedAt) === todayKey).length;
   const storageUsage = await getPhotoStorageUsage(entries);
+  const storageQuotaUsed = formatStorageQuota(
+    storageUsage.total.bytes,
+    SUPABASE_FREE_TIER_STORAGE_BYTES
+  );
   const recentEntries = entries.slice(0, 8);
   const host = headerStore.get("x-forwarded-host") || headerStore.get("host") || "burmanstudio.online";
   const protocol = headerStore.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
@@ -55,9 +66,14 @@ export default async function AdminDashboardPage() {
           <div className={styles.statVal}>{schoolSummary.length}</div>
         </div>
         <div className={styles.stat}>
-          <div className={styles.statLabel}>Storage used</div>
-          <div className={styles.statVal}>{formatStorageUsage(storageUsage.total.bytes)}</div>
+          <div className={styles.statLabel}>Photos bucket used</div>
+          <div className={styles.statVal}>
+            {formatStorageUsage(storageUsage.total.bytes)} /{" "}
+            {formatStorageUsage(SUPABASE_FREE_TIER_STORAGE_BYTES)}
+          </div>
           <div className={styles.statSub}>
+            {storageQuotaUsed} of Supabase Free storage
+            <br />
             {storageUsage.linked.objectCount} linked photos
             {storageUsage.orphaned.objectCount > 0 ? `, ${storageUsage.orphaned.objectCount} extra files` : ""}
           </div>

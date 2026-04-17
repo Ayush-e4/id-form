@@ -3,6 +3,7 @@ import { schoolConfigs } from "./schools";
 import { Submission } from "./types";
 
 export const REPORT_TIME_ZONE = "Asia/Kolkata";
+export const SUPABASE_FREE_TIER_STORAGE_BYTES = 1024 * 1024 * 1024;
 const STORAGE_PAGE_SIZE = 100;
 
 type StorageListItem = {
@@ -229,4 +230,12 @@ export function formatStorageUsage(bytes: number) {
   }
 
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
+export function formatStorageQuota(bytes: number, quotaBytes: number) {
+  if (quotaBytes <= 0) {
+    return "0%";
+  }
+
+  return `${((bytes / quotaBytes) * 100).toFixed(1)}%`;
 }
