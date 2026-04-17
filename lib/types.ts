@@ -6,6 +6,7 @@ export interface Submission {
   photoKey?: string | null;
   submittedAt: string; // ISO string
   type?: 'plant' | 'school';
+  sourceSlug?: string;
   plantSlug?: string;
   plantName?: string;
   schoolSlug?: string;

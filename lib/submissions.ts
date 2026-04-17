@@ -1,4 +1,6 @@
 import { supabase } from "./supabase";
+import { plantConfigs } from "./plants";
+import { schoolConfigs } from "./schools";
 import { Submission } from "./types";
 
 type SubmissionRow = Record<string, unknown>;
@@ -6,6 +8,27 @@ export class SubmissionNotFoundError extends Error {}
 const MAX_INSERT_RETRIES = 10;
 const DEFAULT_PAGE_SIZE = 50;
 const MAX_PAGE_SIZE = 100;
+const REQUIRED_SUBMISSION_COLUMNS = new Set([
+  "type",
+  "photoKey",
+  "sourceSlug",
+  "plantSlug",
+  "plantName",
+  "schoolSlug",
+  "schoolName",
+]);
+const SCHOOL_SLUG_BY_NAME = new Map(
+  schoolConfigs.map((school) => [school.name.trim().toLowerCase(), school.slug])
+);
+const SCHOOL_NAME_BY_SLUG = new Map(
+  schoolConfigs.map((school) => [school.slug, school.name])
+);
+const PLANT_SLUG_BY_NAME = new Map(
+  plantConfigs.map((plant) => [plant.name.trim().toLowerCase(), plant.slug])
+);
+const PLANT_NAME_BY_SLUG = new Map(
+  plantConfigs.map((plant) => [plant.slug, plant.name])
+);
 
 export interface SubmissionListOptions {
   page?: number;
@@ -44,6 +67,7 @@ function buildInsertPayload(entry: Submission, omittedColumns: Set<string>) {
     photoKey: entry.photoKey,
     submittedAt: entry.submittedAt,
     type: entry.type,
+    sourceSlug: entry.sourceSlug,
     plantSlug: entry.plantSlug,
     plantName: entry.plantName,
     schoolSlug: entry.schoolSlug,
@@ -70,8 +94,23 @@ function buildInsertPayload(entry: Submission, omittedColumns: Set<string>) {
 
 function normalizeSubmission(row: SubmissionRow): Submission {
   const type = (asOptionalString(row.type) as Submission["type"]) ?? "plant";
-  const normalizedPlantSlug = asOptionalString(row.plantSlug ?? row.plantslug);
-  const normalizedPlantName = asOptionalString(row.plantName ?? row.plantname);
+  const rawSourceSlug = asOptionalString(row.sourceSlug ?? row.sourceslug);
+  const rawPlantSlug = asOptionalString(row.plantSlug ?? row.plantslug);
+  const rawPlantName = asOptionalString(row.plantName ?? row.plantname);
+  const rawSchoolSlug = asOptionalString(row.schoolSlug ?? row.schoolslug);
+  const rawSchoolName = asOptionalString(row.schoolName ?? row.schoolname);
+  const normalizedPlantSlug =
+    rawPlantSlug ??
+    (rawPlantName ? PLANT_SLUG_BY_NAME.get(rawPlantName.trim().toLowerCase()) : undefined);
+  const normalizedPlantName =
+    rawPlantName ??
+    (normalizedPlantSlug ? PLANT_NAME_BY_SLUG.get(normalizedPlantSlug) : undefined);
+  const normalizedSchoolSlug =
+    rawSchoolSlug ??
+    (rawSchoolName ? SCHOOL_SLUG_BY_NAME.get(rawSchoolName.trim().toLowerCase()) : undefined);
+  const normalizedSchoolName =
+    rawSchoolName ??
+    (normalizedSchoolSlug ? SCHOOL_NAME_BY_SLUG.get(normalizedSchoolSlug) : undefined);
 
   return {
     id: asOptionalString(row.id) ?? "",
@@ -81,10 +120,11 @@ function normalizeSubmission(row: SubmissionRow): Submission {
     photoKey: asOptionalString(row.photoKey ?? row.photokey) ?? null,
     submittedAt: asOptionalString(row.submittedAt ?? row.submittedat) ?? new Date(0).toISOString(),
     type,
+    sourceSlug: rawSourceSlug ?? normalizedSchoolSlug ?? normalizedPlantSlug,
     plantSlug: normalizedPlantSlug ?? (type === "plant" ? "bml-plant" : undefined),
     plantName: normalizedPlantName ?? (type === "plant" ? "BML Plant" : undefined),
-    schoolSlug: asOptionalString(row.schoolSlug ?? row.schoolslug),
-    schoolName: asOptionalString(row.schoolName ?? row.schoolname),
+    schoolSlug: normalizedSchoolSlug,
+    schoolName: normalizedSchoolName,
     fathersName: asOptionalString(row.fathersName ?? row.fathersname),
     mothersName: asOptionalString(row.mothersName ?? row.mothersname),
     class: asOptionalString(row.class),
@@ -107,7 +147,10 @@ function filterSubmissions(entries: Submission[], options: SubmissionListOptions
 
   if (routeSlug && routeSlug !== "all") {
     filtered = filtered.filter(
-      (entry) => entry.schoolSlug === routeSlug || entry.plantSlug === routeSlug
+      (entry) =>
+        entry.sourceSlug === routeSlug ||
+        entry.schoolSlug === routeSlug ||
+        entry.plantSlug === routeSlug
     );
   }
 
@@ -115,6 +158,7 @@ function filterSubmissions(entries: Submission[], options: SubmissionListOptions
     filtered = filtered.filter((entry) => {
       return [
         entry.name,
+        entry.sourceSlug,
         entry.plantName,
         entry.plantSlug,
         entry.schoolName,
@@ -176,6 +220,12 @@ export async function appendSubmission(entry: Submission): Promise<void> {
     const missingColumn = parseMissingColumn(error);
     if (!missingColumn || omittedColumns.has(missingColumn)) {
       throw error;
+    }
+
+    if (REQUIRED_SUBMISSION_COLUMNS.has(missingColumn)) {
+      throw new Error(
+        `Supabase schema is missing required submissions column "${missingColumn}". Run the latest migrations before accepting new submissions.`
+      );
     }
 
     omittedColumns.add(missingColumn);

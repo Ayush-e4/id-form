@@ -1,0 +1,3 @@
+-- Intentionally empty.
+-- Supabase CLI seeding is enabled in config.toml, so this placeholder keeps
+-- `supabase db reset` working until we need real seed data.

@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
     const plantName = trimString(body.plantName, MAX_TEXT_LENGTH);
     const schoolSlug = trimString(body.schoolSlug, MAX_TEXT_LENGTH);
     const schoolName = trimString(body.schoolName, MAX_TEXT_LENGTH);
+    const sourceSlug = type === "school" ? schoolSlug : plantSlug;
     const plantConfig = type === "plant" && plantSlug ? getPlantConfig(plantSlug) : undefined;
     const schoolConfig = type === "school" && schoolSlug ? getSchoolConfig(schoolSlug) : undefined;
 
@@ -163,6 +164,7 @@ export async function POST(req: NextRequest) {
       photoKey: normalizedPhotoKey,
       submittedAt: new Date().toISOString(),
       type,
+      sourceSlug,
       plantSlug,
       plantName: plantConfig?.name || plantName,
       schoolSlug,
@@ -187,6 +189,7 @@ export async function POST(req: NextRequest) {
     return jsonNoStore({ ok: true, id: entry.id });
   } catch (err) {
     console.error("[submit]", err);
-    return jsonNoStore({ error: "Submission failed" }, { status: 500 });
+    const message = err instanceof Error ? err.message : "Submission failed";
+    return jsonNoStore({ error: message }, { status: 500 });
   }
 }
