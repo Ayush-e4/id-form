@@ -33,6 +33,14 @@ function getCalendarDate(value: string) {
   }).format(new Date(value));
 }
 
+function formatSubmittedAt(value: string) {
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: REPORT_TIME_ZONE,
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
 function buildPhotoFilename(entry: Submission) {
   const extMatch = entry.photoUrl?.match(/\.([a-zA-Z0-9]+)(?:\?.*)?$/);
   let ext = extMatch ? extMatch[1] : "jpg";
@@ -357,7 +365,7 @@ export default function SubmissionsView() {
         "House Name": entry.houseName || "",
         "Photo URL": entry.photoUrl ?? "Not uploaded",
         "Sample Photo Name": entry.photoUrl ? buildPhotoFilename(entry) : "",
-        "Submitted At": new Date(entry.submittedAt).toLocaleString("en-IN"),
+        "Submitted At": formatSubmittedAt(entry.submittedAt),
       }));
 
       const suffix = schoolFilter === "all" ? "all" : schoolFilter;
@@ -693,10 +701,7 @@ export default function SubmissionsView() {
                         </span>
                       </td>
                       <td className={styles.timeCell}>
-                        {new Date(entry.submittedAt).toLocaleString("en-IN", {
-                          dateStyle: "medium",
-                          timeStyle: "short",
-                        })}
+                        {formatSubmittedAt(entry.submittedAt)}
                       </td>
                       <td>
                         <button

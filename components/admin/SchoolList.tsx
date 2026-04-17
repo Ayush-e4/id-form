@@ -3,6 +3,8 @@
 import { useState } from "react";
 import styles from "@/app/admin/page.module.css";
 
+const REPORT_TIME_ZONE = "Asia/Kolkata";
+
 type SchoolSummary = {
   slug: string;
   name: string;
@@ -11,6 +13,14 @@ type SchoolSummary = {
   withPhoto: number;
   lastSubmittedAt: string;
 };
+
+function formatSubmittedAt(value: string) {
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: REPORT_TIME_ZONE,
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
 
 export default function SchoolList({ schools }: { schools: SchoolSummary[] }) {
   const [search, setSearch] = useState("");
@@ -69,10 +79,7 @@ export default function SchoolList({ schools }: { schools: SchoolSummary[] }) {
                   <td className={styles.mono} style={{ color: "#ffffff", fontSize: "14px" }}>{school.withPhoto}</td>
                   <td className={styles.timeCell} style={{ color: "#ffffff", fontSize: "14px" }}>
                     {school.lastSubmittedAt
-                      ? new Date(school.lastSubmittedAt).toLocaleString("en-IN", {
-                          dateStyle: "medium",
-                          timeStyle: "short",
-                        })
+                      ? formatSubmittedAt(school.lastSubmittedAt)
                       : "No data"}
                   </td>
                 </tr>

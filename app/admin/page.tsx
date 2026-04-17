@@ -16,6 +16,14 @@ import ShareableRoutes from "@/components/admin/ShareableRoutes";
 
 export const dynamic = "force-dynamic";
 
+function formatSubmittedAt(value: string) {
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
+}
+
 export default async function AdminDashboardPage() {
   const headerStore = await headers();
   const entries = await readSubmissions();
@@ -109,10 +117,7 @@ export default async function AdminDashboardPage() {
                     <div className={styles.listMeta}>{entry.schoolName || entry.plantName || entry.type || "Unknown route"}</div>
                   </div>
                   <div className={styles.listMeta}>
-                    {new Date(entry.submittedAt).toLocaleString("en-IN", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}
+                    {formatSubmittedAt(entry.submittedAt)}
                   </div>
                 </div>
               ))
